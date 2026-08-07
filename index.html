@@ -141,6 +141,12 @@
             color: rgba(255, 255, 255, 0.9);
         }
 
+        .section-title .view-all {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+        }
+
         .anime-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -217,7 +223,6 @@
             margin-top: 0.3rem;
         }
 
-        /* Детальная страница */
         .detail-screen {
             display: none;
         }
@@ -401,7 +406,7 @@
         <!-- Каталог -->
         <div id="catalog-screen">
             <div class="search-bar">
-                <input type="text" id="search-input" placeholder="Поиск аниме..." onkeypress="if(event.key==='Enter') searchAnime()">
+                <input type="text" id="search-input" placeholder="Поиск аниме..." onkeyup="searchAnime()">
                 <button onclick="searchAnime()">Поиск</button>
             </div>
 
@@ -413,11 +418,10 @@
 
             <div class="section-title">
                 <h2 id="section-title">🔥 Недавно добавленные</h2>
+                <span class="view-all">Смотреть все →</span>
             </div>
 
-            <div class="anime-grid" id="anime-container">
-                <!-- Карточки -->
-            </div>
+            <div class="anime-grid" id="anime-container"></div>
 
             <div class="pagination" id="pagination">
                 <button id="btn-prev" disabled onclick="prevPage()">← Назад</button>
@@ -456,7 +460,7 @@
     </div>
 
     <script>
-        // ==================== ДАННЫЕ С РАБОЧИМИ ССЫЛКАМИ НА ПЛЕЕР ====================
+        // ==================== ДАННЫЕ С РАБОЧИМИ ССЫЛКАМИ ====================
         const ANIME_DATA = [
             {
                 id: 1,
@@ -465,13 +469,12 @@
                 year: 2008,
                 episodes: 24,
                 rating: 8.7,
-                poster: 'https://static.zerochan.net/Black.Butler.full.1518157.jpg',
-                description: 'Молодой граф Сиэль Фантомхайв заключает договор с демоном Себастьяном, чтобы отомстить за смерть родителей. Демон служит ему верой и правдой, пока не получит его душу...',
+                poster: 'https://i.kodik.biz/posters/anime/1.jpg',
+                description: 'Молодой граф Сиэль Фантомхайв заключает договор с демоном Себастьяном, чтобы отомстить за смерть родителей.',
                 genres: ['Демоны', 'Драма', 'Фэнтези'],
                 studio: 'A-1 Pictures',
                 status: 'Завершён',
                 type: 'ТВ-сериал',
-                // РАБОЧАЯ ССЫЛКА НА ПЛЕЕР KODIK
                 player_links: [
                     { title: 'AniDUB (озвучка)', url: 'https://kodik.info/serial/6663/player?player=1&series=1' },
                     { title: 'Субтитры', url: 'https://kodik.info/serial/6663/player?player=1&series=1' }
@@ -484,8 +487,8 @@
                 year: 2003,
                 episodes: 51,
                 rating: 9.1,
-                poster: 'https://static.zerochan.net/Fullmetal.Alchemist.full.1836302.jpg',
-                description: 'Братья Элрики ищут философский камень, чтобы вернуть свои тела после неудачного алхимического ритуала. Их путь полон опасностей и тайн.',
+                poster: 'https://i.kodik.biz/posters/anime/2.jpg',
+                description: 'Братья Элрики ищут философский камень, чтобы вернуть свои тела после неудачного алхимического ритуала.',
                 genres: ['Приключения', 'Драма', 'Фэнтези'],
                 studio: 'Bones',
                 status: 'Завершён',
@@ -502,8 +505,8 @@
                 year: 2013,
                 episodes: 25,
                 rating: 9.0,
-                poster: 'https://static.zerochan.net/Shingeki.no.Kyojin.full.1592237.jpg',
-                description: 'Человечество живёт за огромными стенами, защищаясь от титанов - гигантских существ, пожирающих людей. Эрен Йегер клянется уничтожить всех титанов.',
+                poster: 'https://i.kodik.biz/posters/anime/3.jpg',
+                description: 'Человечество живёт за огромными стенами, защищаясь от титанов - гигантских существ, пожирающих людей.',
                 genres: ['Экшен', 'Драма', 'Фэнтези'],
                 studio: 'Wit Studio',
                 status: 'Выходит',
@@ -520,8 +523,8 @@
                 year: 2011,
                 episodes: 24,
                 rating: 9.2,
-                poster: 'https://static.zerochan.net/Steins%3BGate.full.1620438.jpg',
-                description: 'Группа студентов случайно изобретает устройство для отправки сообщений в прошлое. Это приводит к непредсказуемым последствиям и изменению временных линий.',
+                poster: 'https://i.kodik.biz/posters/anime/4.jpg',
+                description: 'Группа студентов изобретает устройство для отправки сообщений в прошлое, что приводит к непредсказуемым последствиям.',
                 genres: ['Научная фантастика', 'Триллер', 'Драма'],
                 studio: 'White Fox',
                 status: 'Завершён',
@@ -538,8 +541,8 @@
                 year: 2012,
                 episodes: 25,
                 rating: 8.3,
-                poster: 'https://static.zerochan.net/Sword.Art.Online.full.1542700.jpg',
-                description: 'Тысячи игроков оказываются запертыми в виртуальной MMORPG, где смерть в игре означает смерть в реальности. Кирито должен пройти игру, чтобы выжить.',
+                poster: 'https://i.kodik.biz/posters/anime/5.jpg',
+                description: 'Тысячи игроков оказываются запертыми в виртуальной MMORPG, где смерть в игре означает смерть в реальности.',
                 genres: ['Экшен', 'Приключения', 'Романтика'],
                 studio: 'A-1 Pictures',
                 status: 'Завершён',
@@ -556,7 +559,7 @@
                 year: 2019,
                 episodes: 26,
                 rating: 8.9,
-                poster: 'https://static.zerochan.net/Kimetsu.no.Yaiba.full.2419934.jpg',
+                poster: 'https://i.kodik.biz/posters/anime/6.jpg',
                 description: 'Танджиро Камадо становится охотником на демонов, чтобы найти способ превратить свою сестру Незуко обратно в человека.',
                 genres: ['Экшен', 'Фэнтези', 'Приключения'],
                 studio: 'ufotable',
@@ -574,8 +577,8 @@
                 year: 2014,
                 episodes: 12,
                 rating: 8.1,
-                poster: 'https://static.zerochan.net/Tokyo.Ghoul.full.1757389.jpg',
-                description: 'Кэн Канэки становится полу-гулем после встречи с девушкой, которая оказывается гулем. Теперь он должен выживать в мире, где люди охотятся на гулей.',
+                poster: 'https://i.kodik.biz/posters/anime/7.jpg',
+                description: 'Кэн Канэки становится полу-гулем после встречи с девушкой-гулем. Теперь он должен выживать в мире, где люди охотятся на гулей.',
                 genres: ['Экшен', 'Триллер', 'Драма'],
                 studio: 'Pierrot',
                 status: 'Завершён',
@@ -592,7 +595,7 @@
                 year: 1995,
                 episodes: 26,
                 rating: 8.8,
-                poster: 'https://static.zerochan.net/Evangelion.full.1482633.jpg',
+                poster: 'https://i.kodik.biz/posters/anime/8.jpg',
                 description: 'В мире после Второго удара подростки пилотируют гигантских роботов-евангелионов, чтобы защитить Землю от таинственных врагов - Ангелов.',
                 genres: ['Научная фантастика', 'Драма', 'Психологическое'],
                 studio: 'Gainax',
@@ -609,32 +612,10 @@
         let state = {
             currentPage: 1,
             itemsPerPage: 6,
-            currentAnime: null,
-            filteredData: [...ANIME_DATA],
-            currentVoiceUrl: ''
+            filteredData: [...ANIME_DATA]
         };
 
-        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            renderCatalog();
-        });
-
-        // ==================== ПОИСК ====================
-        function searchAnime() {
-            const query = document.getElementById('search-input').value.trim().toLowerCase();
-            if (!query) {
-                state.filteredData = [...ANIME_DATA];
-            } else {
-                state.filteredData = ANIME_DATA.filter(a => 
-                    a.title.toLowerCase().includes(query) || 
-                    a.title_orig.toLowerCase().includes(query)
-                );
-            }
-            state.currentPage = 1;
-            renderCatalog();
-        }
-
-        // ==================== ОТРИСОВКА КАТАЛОГА ====================
+        // ==================== ГЛАВНАЯ ФУНКЦИЯ ОТРИСОВКИ ====================
         function renderCatalog() {
             const container = document.getElementById('anime-container');
             const start = (state.currentPage - 1) * state.itemsPerPage;
@@ -674,6 +655,22 @@
             document.getElementById('pagination').style.display = totalPages > 1 ? 'flex' : 'none';
         }
 
+        // ==================== ПОИСК ====================
+        function searchAnime() {
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            if (!query) {
+                state.filteredData = [...ANIME_DATA];
+            } else {
+                state.filteredData = ANIME_DATA.filter(a => 
+                    a.title.toLowerCase().includes(query) || 
+                    a.title_orig.toLowerCase().includes(query)
+                );
+            }
+            state.currentPage = 1;
+            renderCatalog();
+        }
+
+        // ==================== ПАГИНАЦИЯ ====================
         function prevPage() {
             if (state.currentPage > 1) {
                 state.currentPage--;
@@ -696,12 +693,10 @@
             const anime = ANIME_DATA.find(a => a.id === id);
             if (!anime) return;
 
-            state.currentAnime = anime;
             document.getElementById('catalog-screen').style.display = 'none';
             document.getElementById('detail-screen').style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            // Заполняем данные
             document.getElementById('detail-poster').src = anime.poster;
             document.getElementById('detail-title').textContent = anime.title;
             document.getElementById('detail-orig-title').textContent = anime.title_orig;
@@ -734,7 +729,6 @@
                 </div>
             `;
 
-            // Озвучки
             const select = document.getElementById('voice-select');
             select.innerHTML = '';
             anime.player_links.forEach((link, index) => {
@@ -744,18 +738,14 @@
                 select.appendChild(opt);
             });
 
-            // Автозапуск первой озвучки
             if (anime.player_links.length > 0) {
-                const firstUrl = anime.player_links[0].url;
-                state.currentVoiceUrl = firstUrl;
-                document.getElementById('kodik-player').src = firstUrl;
+                document.getElementById('kodik-player').src = anime.player_links[0].url;
             }
         }
 
         function changeVoice() {
             const url = document.getElementById('voice-select').value;
             if (url) {
-                state.currentVoiceUrl = url;
                 document.getElementById('kodik-player').src = url;
             }
         }
@@ -767,7 +757,20 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // ==================== КЛАВИАТУРА ====================
+        // ==================== ЗАПУСК ====================
+        // ВАЖНО! Вызываем отрисовку при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCatalog();
+        });
+
+        // Также вызываем сразу, если DOM уже загружен
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            renderCatalog();
+        } else {
+            document.addEventListener('DOMContentLoaded', renderCatalog);
+        }
+
+        // Клавиша Escape для возврата
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('detail-screen').style.display === 'block') {
                 goBack();
