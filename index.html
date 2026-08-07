@@ -1,774 +1,230 @@
-[07.08.2026 16:49] rz: Вот полный HTML-файл для сайта AnimeStream. В нём есть всё — от прелоадера и hero-секции до модального плеера с эпизодами и избранным.
-
-`html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-  <title>AnimeStream — Смотри аниме онлайн</title>
-  <!-- Font Awesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      background-color: #141414;
-      color: #fff;
-      min-height: 100vh;
-      transition: filter 0.3s ease;
-    }
-
-    body.modal-open {
-      overflow: hidden;
-    }
-
-    body.modal-open .main-content {
-      filter: blur(8px);
-      pointer-events: none;
-      user-select: none;
-    }
-
-    /* Прелоадер (скелетон) */
-    .preloader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #141414;
-      z-index: 9999;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      padding: 2rem;
-      justify-content: center;
-      align-items: center;
-      transition: opacity 0.4s ease, visibility 0.4s ease;
-    }
-
-    .preloader.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .skeleton-card {
-      width: 200px;
-      height: 300px;
-      background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 8px;
-    }
-
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 2rem;
-      background: rgba(20, 20, 20, 0.95);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(10px);
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .logo {
-      font-size: 1.8rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: #e50914;
-      text-transform: uppercase;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .logo i {
-      font-size: 2rem;
-    }
-
-    .search-container {
-      display: flex;
-      align-items: center;
-      background: #333;
-      border-radius: 4px;
-      padding: 0.4rem 0.8rem;
-      flex: 1;
-      max-width: 400px;
-      margin: 0 1rem;
-    }
-
-    .search-container input {
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 1rem;
-      width: 100%;
-      outline: none;
-    }
-
-    .search-container i {
-      color: #aaa;
-      margin-right: 0.5rem;
-    }
-
-    .favorites-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      cursor: pointer;
-      background: #333;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      transition: background 0.2s;
-      font-size: 1rem;
-      border: none;
-      color: white;
-    }
-
-    .favorites-badge:hover {
-      background: #e50914;
-    }
-
-    #fav-count {
-      background: #e50914;
-      border-radius: 50%;
-      padding: 0.2rem 0.5rem;
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-
-    /* Hero секция */
-    .hero {
-      position: relative;
-      width: 100%;
-      height: 60vh;
-      min-height: 400px;
-      background-size: cover;
-      background-position: center;
-      display: flex;
-      align-items: flex-end;
-      margin-bottom: 2rem;
-      transition: background-image 0.5s ease;
-    }
-
-    .hero-overlay {
-      background: linear-gradient(to top, #141414, transparent);
-      width: 100%;
-      padding: 3rem 2rem 2rem;
-    }
-
-    .hero-title {
-      font-size: 3rem;
-      font-weight: 800;
-      text-shadow: 2px 2px 10px black;
-      margin-bottom: 0.5rem;
-    }
-[07.08.2026 16:49] rz: .hero-meta {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      font-size: 1.2rem;
-      color: #ccc;
-    }
-
-    .hero-rating {
-      color: #f5c518;
-    }
-
-    /* Фильтры */
-    .filters {
-      display: flex;
-      gap: 0.8rem;
-      padding: 0 2rem 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    .filter-btn {
-      background: #333;
-      border: none;
-      color: #fff;
-      padding: 0.5rem 1.2rem;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 0.95rem;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    .filter-btn.active,
-    .filter-btn:hover {
-      background: #e50914;
-    }
-
-    /* Сетка карточек */
-    .anime-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1.5rem;
-      padding: 0 2rem 3rem;
-    }
-
-    .anime-card {
-      background: #222;
-      border-radius: 8px;
-      overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease, border 0.2s;
-      cursor: pointer;
-      position: relative;
-      border: 2px solid transparent;
-    }
-
-    .anime-card:hover {
-      transform: translateY(-8px);
-      border-color: #e50914;
-      box-shadow: 0 10px 25px rgba(229, 9, 20, 0.3);
-    }
-
-    .anime-poster {
-      width: 100%;
-      height: 280px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .anime-info {
-      padding: 0.8rem;
-    }
-
-    .anime-title {
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .anime-year {
-      color: #aaa;
-      font-size: 0.9rem;
-    }
-
-    .card-fav {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 1rem;
-    }
-
-    .card-fav i {
-      color: #aaa;
-      transition: 0.2s;
-    }
-
-    .card-fav.favorited i {
-      color: #e50914;
-    }
-
-    /* Модальное окно */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.85);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      visibility: hidden;
-      opacity: 0;
-      transition: 0.3s ease;
-    }
-
-    .modal.active {
-      visibility: visible;
-      opacity: 1;
-    }
-
-    .modal-content {
-      background: #1a1a1a;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 900px;
-      max-height: 90vh;
-      overflow-y: auto;
-      position: relative;
-      padding: 1.5rem;
-    }
-
-    .close-modal {
-      position: absolute;
-      top: 1rem;
-      right: 1.5rem;
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 2rem;
-      cursor: pointer;
-      z-index: 10;
-    }
-
-    .video-container {
-      width: 100%;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 1rem;
-    }
-
-    video {
-      width: 100%;
-      display: block;
-      max-height: 450px;
-      background: black;
-    }
-
-    .modal-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-
-    .modal-meta {
-      display: flex;
-      gap: 1.5rem;
-      margin: 0.5rem 0 1rem;
-      color: #ccc;
-    }
-
-    .modal-description {
-      color: #bbb;
-      margin-bottom: 1.5rem;
-      line-height: 1.5;
-    }
-
-    .episodes-section h3 {
-      margin-bottom: 0.8rem;
-    }
-
-    .episodes-list {
-      display: flex;
-      gap: 0.6rem;
-      overflow-x: auto;
-      padding-bottom: 0.5rem;
-      flex-wrap: nowrap;
-    }
-
-    .ep-btn {
-      background: #333;
-      border: none;
-      color: white;
-      padding: 0.5rem 1.2rem;
-      border-radius: 20px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: 0.2s;
-    }
-
-    .ep-btn.active-ep {
-      background: #e50914;
-    }
-[07.08.2026 16:49] rz: .modal-fav-btn {
-      background: #333;
-      border: none;
-      color: white;
-      padding: 0.5rem 1.2rem;
-      border-radius: 20px;
-      margin-top: 1rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .modal-fav-btn.favorited {
-      background: #e50914;
-    }
-
-    @media (max-width: 768px) {
-      .header {
-        padding: 1rem;
-      }
-      .hero {
-        height: 40vh;
-        min-height: 300px;
-      }
-      .hero-title {
-        font-size: 2rem;
-      }
-      .anime-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        padding: 0 1rem 2rem;
-      }
-      .modal-content {
-        width: 95%;
-        padding: 1rem;
-      }
-      video {
-        max-height: 250px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Смотреть аниме — Player</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #0a0a0f; color: #fff; }
+        .navbar { background: #14141e; padding: 15px 30px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #2a2a3a; flex-wrap: wrap; }
+        .navbar a { color: #e94560; text-decoration: none; font-weight: bold; font-size: 1.5rem; }
+        .navbar span { color: #888; font-size: 0.9rem; }
+        .player-wrapper { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 15px; background: #000; box-shadow: 0 20px 60px rgba(233, 69, 96, 0.2); }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .controls { margin-top: 25px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: #14141e; padding: 15px 25px; border-radius: 15px; }
+        .controls label { color: #aaa; font-size: 0.9rem; }
+        .controls select { background: #1e1e2a; color: #fff; padding: 10px 20px; border-radius: 30px; border: 1px solid #333; cursor: pointer; }
+        .controls select:focus { outline: 2px solid #e94560; }
+        .episode-list { margin-top: 30px; background: #14141e; padding: 20px; border-radius: 15px; }
+        .episode-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .ep-btn { background: #1e1e2a; padding: 8px 18px; border-radius: 30px; border: 1px solid #333; color: #aaa; cursor: pointer; transition: 0.2s; }
+        .ep-btn:hover { background: #e94560; color: #fff; border-color: #e94560; }
+        .ep-btn.active { background: #e94560; color: #fff; border-color: #e94560; }
+        .info-title { font-size: 1.8rem; margin-bottom: 10px; }
+        .back-btn { background: #e94560; padding: 8px 25px; border-radius: 30px; border: none; color: #fff; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
+        .back-btn:hover { background: #ff6b81; }
+        .loading-player { text-align: center; padding: 30px; color: #888; }
+        .player-error { color: #e94560; text-align: center; padding: 30px; }
+        @media (max-width: 600px) { .navbar { flex-direction: column; align-items: flex-start; } .controls { flex-direction: column; align-items: stretch; } }
+    </style>
 </head>
 <body>
-
-  <!-- Прелоадер -->
-  <div class="preloader" id="preloader">
-    <div class="skeleton-card"></div>
-    <div class="skeleton-card"></div>
-    <div class="skeleton-card"></div>
-    <div class="skeleton-card"></div>
-    <div class="skeleton-card"></div>
-    <div class="skeleton-card"></div>
-  </div>
-
-  <!-- Основной контент -->
-  <div class="main-content">
-    <!-- Header -->
-    <header class="header">
-      <div class="logo">
-        <i class="fas fa-play-circle"></i> AnimeStream
-      </div>
-      <div class="search-container">
-        <i class="fas fa-search"></i>
-        <input type="text" id="search-input" placeholder="Поиск аниме...">
-      </div>
-      <button class="favorites-badge" id="favorites-toggle">
-        <i class="fas fa-bookmark"></i> Избранное <span id="fav-count">0</span>
-      </button>
-    </header>
-
-    <!-- Hero секция -->
-    <div class="hero" id="hero-banner">
-      <div class="hero-overlay">
-        <div class="hero-title" id="hero-title"></div>
-        <div class="hero-meta">
-          <span id="hero-year"></span>
-          <span class="hero-rating" id="hero-rating"></span>
-        </div>
-      </div>
+    <div class="navbar">
+        <a href="index.html">🏠 AnimeHub</a>
+        <span>▶ Сейчас смотрим</span>
+        <span id="animeTitleDisplay" style="margin-left: auto; color: #e94560; font-weight: bold;">Загрузка...</span>
     </div>
 
-    <!-- Фильтры -->
-    <div class="filters" id="filters-container">
-      <button class="filter-btn active" data-genre="all"><i class="fas fa-th-large"></i> Все</button>
-      <button class="filter-btn" data-genre="Экшен"><i class="fas fa-fist-raised"></i> Экшен</button>
-      <button class="filter-btn" data-genre="Романтика"><i class="fas fa-heart"></i> Романтика</button>
-      <button class="filter-btn" data-genre="Фэнтези"><i class="fas fa-dragon"></i> Фэнтези</button>
-      <button class="filter-btn" data-genre="Сёнэн"><i class="fas fa-fire"></i> Сёнэн</button>
-    </div>
-
-    <!-- Сетка аниме -->
-    <div class="anime-grid" id="anime-grid"></div>
-  </div>
-
-  <!-- Модальное окно плеера -->
-  <div class="modal" id="anime-modal">
-    <div class="modal-content">
-      <button class="close-modal" id="close-modal-btn">&times;</button>
-      <div class="video-container">
-        <video id="anime-player" controls autoplay>
-          <source src="" type="video/mp4">
-          Ваш браузер не поддерживает видео.
-        </video>
-      </div>
-      <h2 class="modal-title" id="modal-title"></h2>
-      <div class="modal-meta">
-        <span id="modal-year"></span>
-        <span style="color:#f5c518;" id="modal-rating"></span>
-      </div>
-      <p class="modal-description" id="modal-description"></p>
-      <div class="episodes-section">
-        <h3>Эпизоды</h3>
-        <div class="episodes-list" id="episodes-container"></div>
-      </div>
-      <button class="modal-fav-btn" id="modal-fav-btn">
-        <i class="far fa-bookmark"></i> <span>В избранное</span>
-      </button>
-    </div>
-  </div>
-
-  <script>
-    (function() {
-      // ---------- БАЗА ДАННЫХ ----------
-      const animeData = [
-        { id: 1, title: "Атака Титанов", year: 2013, rating: 4.9, poster: "https://picsum.photos/300/450?random=1", description: "Человечество борется за выживание против гигантских титанов.", genre: "Экшен", videoUrl: "https://example.com/aot-ep1.mp4", episodes: generateEpisodes(24, "https://example.com/aot-ep") },
-[07.08.2026 16:49] rz: { id: 2, title: "Вайолет Эвергарден", year: 2018, rating: 4.8, poster: "https://picsum.photos/300/450?random=2", description: "Бывшая солдат учится выражать эмоции, работая автозапиской.", genre: "Романтика", videoUrl: "https://example.com/violet-ep1.mp4", episodes: generateEpisodes(13, "https://example.com/violet-ep") },
-        { id: 3, title: "Клинок, рассекающий демонов", year: 2019, rating: 4.9, poster: "https://picsum.photos/300/450?random=3", description: "Тандзиро сражается с демонами, чтобы спасти сестру.", genre: "Сёнэн", videoUrl: "https://example.com/demonslayer-ep1.mp4", episodes: generateEpisodes(26, "https://example.com/demonslayer-ep") },
-        { id: 4, title: "Твоё имя", year: 2016, rating: 4.8, poster: "https://picsum.photos/300/450?random=4", description: "Двое незнакомцев меняются телами и судьбами.", genre: "Романтика", videoUrl: "https://example.com/yourname-ep1.mp4", episodes: generateEpisodes(1, "https://example.com/yourname-ep") },
-        { id: 5, title: "Реинкарнация безработного", year: 2021, rating: 4.5, poster: "https://picsum.photos/300/450?random=5", description: "Безработный перерождается в мире меча и магии.", genre: "Фэнтези", videoUrl: "https://example.com/mushoku-ep1.mp4", episodes: generateEpisodes(23, "https://example.com/mushoku-ep") },
-        { id: 6, title: "Человек-бензопила", year: 2022, rating: 4.7, poster: "https://picsum.photos/300/450?random=6", description: "Дэндзи сражается с демонами с помощью бензопилы.", genre: "Сёнэн", videoUrl: "https://example.com/chainsaw-ep1.mp4", episodes: generateEpisodes(12, "https://example.com/chainsaw-ep") },
-        { id: 7, title: "Хоримия", year: 2021, rating: 4.6, poster: "https://picsum.photos/300/450?random=7", description: "Школьная романтическая история двух непохожих людей.", genre: "Романтика", videoUrl: "https://example.com/horimiya-ep1.mp4", episodes: generateEpisodes(13, "https://example.com/horimiya-ep") },
-        { id: 8, title: "Созданный в Бездне", year: 2017, rating: 4.7, poster: "https://picsum.photos/300/450?random=8", description: "Девочка спускается в загадочную Бездну, полную опасностей.", genre: "Фэнтези", videoUrl: "https://example.com/abyss-ep1.mp4", episodes: generateEpisodes(13, "https://example.com/abyss-ep") },
-        { id: 9, title: "Магическая битва", year: 2020, rating: 4.8, poster: "https://picsum.photos/300/450?random=9", description: "Юдзи Итадори вступает в мир проклятий и магов.", genre: "Сёнэн", videoUrl: "https://example.com/jjk-ep1.mp4", episodes: generateEpisodes(24, "https://example.com/jjk-ep") },
-        { id: 10, title: "Убийца гоблинов", year: 2018, rating: 4.3, poster: "https://picsum.photos/300/450?random=10", description: "Охотник истребляет гоблинов после трагических событий.", genre: "Экшен", videoUrl: "https://example.com/goblin-ep1.mp4", episodes: generateEpisodes(12, "https://example.com/goblin-ep") },
-        { id: 11, title: "Город, в котором меня нет", year: 2016, rating: 4.6, poster: "https://picsum.photos/300/450?random=11", description: "Парень путешествует во времени, чтобы предотвратить убийства.", genre: "Фэнтези", videoUrl: "https://example.com/erased-ep1.mp4", episodes: generateEpisodes(12, "https://example.com/erased-ep") },
-        { id: 12, title: "Ванпанчмен", year: 2015, rating: 4.7, poster: "https://picsum.photos/300/450?random=12", description: "Сайтама побеждает любого врага с одного удара.", genre: "Экшен", videoUrl: "https://example.com/opm-ep1.mp4", episodes: generateEpisodes(12, "https://example.com/opm-ep") },
-        { id: 13, title: "Тетрадь смерти", year: 2006, rating: 4.8, poster: "https://picsum.photos/300/450?random=13", description: "Гениальный школьник находит тетрадь, убивающую людей.", genre: "Сёнэн", videoUrl: "https://example.com/deathnote-ep1.mp4", episodes: generateEpisodes(37, "https://example.com/deathnote-ep") }
-      ];
-
-      function generateEpisodes(count, baseUrl) {
-        return Array.from({ length: count }, (_, i) => ({
-          number: i + 1,
-          url: ${baseUrl}${i + 1}.mp4
-        }));
-      }
-[07.08.2026 16:49] rz: // ---------- СОСТОЯНИЕ ----------
-      let currentFilter = 'all';
-      let favorites = JSON.parse(localStorage.getItem('animeFavorites')) || [];
-      let currentAnimeId = null;
-      let currentEpisodeIndex = 0;
-
-      // DOM элементы
-      const preloader = document.getElementById('preloader');
-      const animeGrid = document.getElementById('anime-grid');
-      const searchInput = document.getElementById('search-input');
-      const favCountSpan = document.getElementById('fav-count');
-      const favToggleBtn = document.getElementById('favorites-toggle');
-      const heroBanner = document.getElementById('hero-banner');
-      const heroTitle = document.getElementById('hero-title');
-      const heroYear = document.getElementById('hero-year');
-      const heroRating = document.getElementById('hero-rating');
-      const modal = document.getElementById('anime-modal');
-      const closeModalBtn = document.getElementById('close-modal-btn');
-      const animePlayer = document.getElementById('anime-player');
-      const modalTitle = document.getElementById('modal-title');
-      const modalYear = document.getElementById('modal-year');
-      const modalRating = document.getElementById('modal-rating');
-      const modalDescription = document.getElementById('modal-description');
-      const episodesContainer = document.getElementById('episodes-container');
-      const modalFavBtn = document.getElementById('modal-fav-btn');
-      const filterButtons = document.querySelectorAll('.filter-btn');
-
-      // ---------- ФУНКЦИИ ----------
-      function saveFavorites() {
-        localStorage.setItem('animeFavorites', JSON.stringify(favorites));
-      }
-
-      function updateFavCount() {
-        favCountSpan.textContent = favorites.length;
-      }
-
-      function isFavorite(id) {
-        return favorites.includes(id);
-      }
-
-      function toggleFavorite(id) {
-        const index = favorites.indexOf(id);
-        if (index > -1) {
-          favorites.splice(index, 1);
-        } else {
-          favorites.push(id);
-        }
-        saveFavorites();
-        updateFavCount();
-        renderCards(getFilteredAnime());
-        if (currentAnimeId === id) updateModalFavButton();
-      }
-
-      function updateModalFavButton() {
-        if (!currentAnimeId) return;
-        const fav = isFavorite(currentAnimeId);
-        if (fav) {
-          modalFavBtn.classList.add('favorited');
-          modalFavBtn.innerHTML = '<i class="fas fa-bookmark"></i> <span>В избранном</span>';
-        } else {
-          modalFavBtn.classList.remove('favorited');
-          modalFavBtn.innerHTML = '<i class="far fa-bookmark"></i> <span>В избранное</span>';
-        }
-      }
-
-      function getFilteredAnime() {
-        let filtered = animeData;
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        if (searchTerm) {
-          filtered = filtered.filter(a => a.title.toLowerCase().includes(searchTerm));
-        }
-        if (currentFilter === 'favorites') {
-          filtered = filtered.filter(a => favorites.includes(a.id));
-        } else if (currentFilter !== 'all') {
-          filtered = filtered.filter(a => a.genre === currentFilter);
-        }
-        return filtered;
-      }
-
-      function renderCards(animes) {
-        animeGrid.innerHTML = '';
-        if (animes.length === 0) {
-          animeGrid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#aaa;">Ничего не найдено</p>';
-          return;
-        }
-        animes.forEach(anime => {
-          const card = document.createElement('div');
-          card.className = 'anime-card';
-          card.setAttribute('data-id', anime.id);
-          card.innerHTML = `
-            <img class="anime-poster" src="${anime.poster}" alt="${anime.title}" loading="lazy">
-            <div class="anime-info">
-[07.08.2026 16:49] rz: <div class="anime-title">${anime.title}</div>
-              <div class="anime-year">${anime.year}</div>
+    <div class="player-wrapper">
+        <h2 id="animeTitle" class="info-title">Загрузка информации...</h2>
+        
+        <div class="video-container" id="videoContainer">
+            <div id="playerLoader" class="loading-player">
+                <div style="display:inline-block; width:40px; height:40px; border:4px solid #333; border-top:4px solid #e94560; border-radius:50%; animation:spin 1s linear infinite;"></div>
+                <p style="margin-top:15px;">Загрузка плеера...</p>
             </div>
-            <button class="card-fav ${isFavorite(anime.id) ? 'favorited' : ''}" data-id="${anime.id}">
-              <i class="${isFavorite(anime.id) ? 'fas' : 'far'} fa-heart"></i>
-            </button>
-          ;
-          card.addEventListener('click', (e) => {
-            if (e.target.closest('.card-fav')) return;
-            openModal(anime.id);
-          });
-          animeGrid.appendChild(card);
-        });
+            <iframe id="animeIframe" src="about:blank" allowfullscreen style="display:none;"></iframe>
+        </div>
 
-        document.querySelectorAll('.card-fav').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = parseInt(btn.getAttribute('data-id'));
-            toggleFavorite(id);
-          });
-        });
-      }
+        <div class="controls">
+            <label>🎙 Озвучка:</label>
+            <select id="voiceSelect" onchange="changeVoice()">
+                <option value="anilibria">AniLibria</option>
+                <option value="shiza">Shiba</option>
+                <option value="anidub">AniDUB</option>
+                <option value="kodik">Kodik</option>
+            </select>
+            
+            <label style="margin-left: 20px;">📺 Серия:</label>
+            <select id="episodeSelect" onchange="changeEpisode()">
+                <option value="1">1 серия</option>
+            </select>
 
-      function setHero() {
-        const popular = animeData.filter(a => a.rating >= 4.7);
-        const randomAnime = popular[Math.floor(Math.random() * popular.length)] || animeData[0];
-        heroBanner.style.backgroundImage = url(${randomAnime.poster});
-        heroTitle.textContent = randomAnime.title;
-        heroYear.textContent = randomAnime.year;
-        heroRating.innerHTML = <i class="fas fa-star"></i> ${randomAnime.rating};
-      }
+            <a href="index.html" class="back-btn" style="margin-left: auto;">← Назад</a>
+        </div>
 
-      function openModal(animeId) {
-        const anime = animeData.find(a => a.id === animeId);
-        if (!anime) return;
-        currentAnimeId = anime.id;
-        currentEpisodeIndex = 0;
-        modalTitle.textContent = anime.title;
-        modalYear.textContent = anime.year;
-        modalRating.innerHTML = <i class="fas fa-star"></i> ${anime.rating};
-        modalDescription.textContent = anime.description;
-        updateModalFavButton();
+        <div class="episode-list">
+            <h4>Все серии</h4>
+            <div class="episode-grid" id="episodeGrid">
+                <div class="loading-player">Загрузка серий...</div>
+            </div>
+        </div>
+    </div>
 
-        renderEpisodes(anime.episodes);
-        setPlayerSource(anime.episodes[0].url);
+    <script>
+        // Получаем код аниме из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        let animeCode = urlParams.get('code') || 'jujutsu-kaisen';
+        let currentEpisode = 1;
+        let currentVoice = 'anilibria';
+        let animeData = null;
+        let animeId = null;
 
-        modal.classList.add('active');
-        document.body.classList.add('modal-open');
-        animePlayer.play().catch(() => {});
-      }
+        // Провайдеры видео (работают через внешние плееры)
+        // В реальности нужно подставлять ID аниме из API
+        const videoProviders = {
+            'anilibria': (id, ep) => `https://anilibria.tv/embed/${id}/${ep}`,
+            'shiza': (id, ep) => `https://shiza-project.ru/embed/${id}/${ep}`,
+            'anidub': (id, ep) => `https://anidub.com/player/${id}/${ep}`,
+            'kodik': (id, ep) => `https://kodik.cc/serial/${id}/${ep}/720p`
+        };
 
-      function closeModal() {
-        animePlayer.pause();
-        animePlayer.removeAttribute('src');
-        animePlayer.load();
-        modal.classList.remove('active');
-        document.body.classList.remove('modal-open');
-        currentAnimeId = null;
-      }
+        // Функция получения данных об аниме через API
+        async function fetchAnimeData(code) {
+            try {
+                // Сначала пробуем поискать по коду
+                let response = await fetch(`https://api.anilibria.tv/v2/title/search?query=${encodeURIComponent(code)}`);
+                let data = await response.json();
+                
+                let result = null;
+                if (Array.isArray(data) && data.length > 0) {
+                    result = data[0];
+                } else if (data && data.id) {
+                    result = data;
+                } else if (data && data.list && data.list.length > 0) {
+                    result = data.list[0];
+                }
 
-      function setPlayerSource(url) {
-        animePlayer.querySelector('source').setAttribute('src', url);
-        animePlayer.load();
-        animePlayer.play().catch(() => {});
-      }
+                // Если не нашли по коду - пробуем по ID
+                if (!result && !isNaN(code)) {
+                    response = await fetch(`https://api.anilibria.tv/v2/title/${code}`);
+                    data = await response.json();
+                    if (data && data.id) result = data;
+                }
 
-      function renderEpisodes(episodes) {
-        episodesContainer.innerHTML = '';
-        episodes.forEach((ep, idx) => {
-          const btn = document.createElement('button');
-          btn.className = ep-btn ${idx === currentEpisodeIndex ? 'active-ep' : ''};
-          btn.textContent = Серия ${ep.number}`;
-          btn.addEventListener('click', () => {
-            currentEpisodeIndex = idx;
-            setPlayerSource(ep.url);
-            document.querySelectorAll('.ep-btn').forEach((b, i) => {
-              b.classList.toggle('active-ep', i === idx);
-            });
-          });
-          episodesContainer.appendChild(btn);
-        });
-      }
-
-      function applyFilters() {
-        renderCards(getFilteredAnime());
-      }
-
-      // Обработчики событий
-      searchInput.addEventListener('input', applyFilters);
-
-      filterButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          filterButtons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          currentFilter = btn.getAttribute('data-genre');
-          favToggleBtn.style.background = '#333'; 
-          applyFilters();
-        });
-      });
-
-      favToggleBtn.addEventListener('click', () => {
-        filterButtons.forEach(b => b.classList.remove('active'));
-        currentFilter = 'favorites';
-        favToggleBtn.style.background = '#e50914';
-        applyFilters();
-      });
-
-      closeModalBtn.addEventListener('click', closeModal);
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-      });
-[07.08.2026 16:49] rz: modalFavBtn.addEventListener('click', () => {
-        if (currentAnimeId) toggleFavorite(currentAnimeId);
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-          closeModal();
+                return result;
+            } catch (error) {
+                console.error('Ошибка получения данных:', error);
+                return null;
+            }
         }
-      });
 
-      // Инициализация
-      function init() {
-        updateFavCount();
-        setHero();
-        renderCards(animeData);
-        // Скрываем прелоадер через 1 секунду
-        setTimeout(() => {
-          preloader.classList.add('hidden');
-        }, 1000);
-      }
+        // Основная функция загрузки плеера
+        async function loadPlayer() {
+            const titleDisplay = document.getElementById('animeTitleDisplay');
+            const titleElem = document.getElementById('animeTitle');
+            const grid = document.getElementById('episodeGrid');
+            const loader = document.getElementById('playerLoader');
+            const iframe = document.getElementById('animeIframe');
 
-      init();
-    })();
-  </script>
+            try {
+                // Получаем данные об аниме
+                animeData = await fetchAnimeData(animeCode);
+                
+                if (animeData) {
+                    const title = animeData.title || 'Без названия';
+                    titleDisplay.textContent = title;
+                    titleElem.textContent = title;
+                    animeId = animeData.id;
+
+                    // Генерируем серии
+                    const episodes = animeData.episodes || 12;
+                    grid.innerHTML = '';
+                    for (let i = 1; i <= episodes; i++) {
+                        const btn = document.createElement('div');
+                        btn.className = 'ep-btn' + (i === currentEpisode ? ' active' : '');
+                        btn.textContent = i;
+                        btn.onclick = function() {
+                            document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
+                            this.classList.add('active');
+                            currentEpisode = i;
+                            updateVideo();
+                        };
+                        grid.appendChild(btn);
+                    }
+
+                    // Обновляем селектор серий
+                    const epSelect = document.getElementById('episodeSelect');
+                    epSelect.innerHTML = '';
+                    for (let i = 1; i <= episodes; i++) {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.textContent = i + ' серия';
+                        if (i === currentEpisode) opt.selected = true;
+                        epSelect.appendChild(opt);
+                    }
+
+                } else {
+                    // Если не нашли в API - используем заглушку
+                    titleDisplay.textContent = decodeURIComponent(animeCode).replace(/-/g, ' ');
+                    titleElem.textContent = decodeURIComponent(animeCode).replace(/-/g, ' ');
+                    animeId = 85; // ID по умолчанию
+                    
+                    grid.innerHTML = '';
+                    for (let i = 1; i <= 12; i++) {
+                        const btn = document.createElement('div');
+                        btn.className = 'ep-btn' + (i === currentEpisode ? ' active' : '');
+                        btn.textContent = i;
+                        btn.onclick = function() {
+                            document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
+                            this.classList.add('active');
+                            currentEpisode = i;
+                            updateVideo();
+                        };
+                        grid.appendChild(btn);
+                    }
+                }
+
+                // Загружаем видео
+                updateVideo();
+
+            } catch (error) {
+                console.error('Ошибка:', error);
+                grid.innerHTML = `<div class="player-error">⚠️ Ошибка загрузки данных</div>`;
+            }
+        }
+
+        function updateVideo() {
+            const iframe = document.getElementById('animeIframe');
+            const loader = document.getElementById('playerLoader');
+            
+            // Получаем ссылку на видео
+            const provider = videoProviders[currentVoice] || videoProviders['anilibria'];
+            const videoUrl = provider(animeId || 85, currentEpisode);
+            
+            // Показываем iframe
+            iframe.style.display = 'block';
+            loader.style.display = 'none';
+            iframe.src = videoUrl;
+        }
+
+        function changeVoice() {
+            currentVoice = document.getElementById('voiceSelect').value;
+            updateVideo();
+        }
+
+        function changeEpisode() {
+            currentEpisode = parseInt(document.getElementById('episodeSelect').value);
+            document.querySelectorAll('.ep-btn').forEach((btn, index) => {
+                btn.classList.toggle('active', (index + 1) === currentEpisode);
+            });
+            updateVideo();
+        }
+
+        // Запускаем
+        loadPlayer();
+    </script>
 </body>
 </html>
-`
