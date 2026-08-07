@@ -31,13 +31,6 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .glass-strong {
-            background: rgba(255, 255, 255, 0.07);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
         header {
             padding: 1.2rem 2rem;
             display: flex;
@@ -65,28 +58,6 @@
             font-weight: 400;
             background: none;
             -webkit-text-fill-color: rgba(255, 255, 255, 0.5);
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 0.8rem;
-            align-items: center;
-        }
-
-        .header-actions select {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #fff;
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            outline: none;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .header-actions select option {
-            background: #1a1a2e;
         }
 
         .container {
@@ -282,12 +253,6 @@
             font-size: 0.8rem;
             color: #fbbf24;
             margin-top: 0.3rem;
-        }
-
-        .card-rating svg {
-            width: 14px;
-            height: 14px;
-            fill: #fbbf24;
         }
 
         .card-meta {
@@ -487,12 +452,25 @@
             cursor: not-allowed;
         }
 
-        .loading-text, .empty-text {
+        .loading-text,
+        .empty-text {
             grid-column: 1 / -1;
             text-align: center;
             padding: 3rem;
             color: rgba(255, 255, 255, 0.3);
             font-size: 0.95rem;
+        }
+
+        .debug-info {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            display: none;
+            word-break: break-all;
         }
 
         @media (max-width: 768px) {
@@ -522,13 +500,6 @@
             .anime-grid {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 1rem;
-            }
-            .section-title h2 {
-                font-size: 1rem;
-            }
-            .header-actions select {
-                font-size: 0.7rem;
-                padding: 0.3rem 0.6rem;
             }
         }
 
@@ -578,12 +549,6 @@
 <body>
     <header>
         <div class="logo" id="logo">Anime<span>Glass</span></div>
-        <div class="header-actions">
-            <select id="source-select">
-                <option value="kodik">Kodik</option>
-                <option value="alloha">Alloha</option>
-            </select>
-        </div>
     </header>
 
     <div class="container">
@@ -606,6 +571,8 @@
                 <span class="view-all">Смотреть все →</span>
             </div>
 
+            <div id="debug-info" class="debug-info"></div>
+
             <div class="anime-grid" id="anime-container">
                 <div class="loading-text">Загрузка...</div>
             </div>
@@ -619,7 +586,7 @@
         <!-- Детали -->
         <div id="detail-screen" class="detail-screen">
             <button class="detail-back" id="btn-back">← Назад к списку</button>
-            
+
             <div class="detail-grid">
                 <div class="detail-poster-wrap">
                     <img class="detail-poster" id="detail-poster" src="" alt="Постер">
@@ -656,8 +623,7 @@
         const CONFIG = {
             API_URL: 'https://kodik-api.com',
             TOKEN: '1849e7b2339ee8eb64817452d3ef1d59',
-            LIMIT: 20,
-            CORS_PROXY: 'https://api.allorigins.win/raw?url='
+            LIMIT: 20
         };
 
         // ========== СОСТОЯНИЕ ==========
@@ -665,10 +631,10 @@
             currentPage: 1,
             currentMode: 'list',
             searchQuery: '',
-            filters: { kind: '', status: '', year: '' },
             currentAnimeList: [],
             rawAnimeData: [],
-            currentAnimeId: null
+            currentAnimeId: null,
+            totalItems: 0
         };
 
         // ========== DOM ==========
@@ -694,7 +660,7 @@
             player: $('kodik-player'),
             playerError: $('player-error'),
             paginationControls: $('pagination-controls'),
-            sourceSelect: $('source-select')
+            debugInfo: $('debug-info')
         };
 
         // ========== ЗАПУСК ==========
@@ -746,15 +712,9 @@
                     playVideo(url);
                 }
             });
-
-            dom.sourceSelect.addEventListener('change', () => {
-                if (state.currentAnimeId) {
-                    loadAnimeDetails(state.currentAnimeId);
-                }
-            });
         }
 
-        // ========== API ЗАПРОСЫ ==========
+        // ========== API ЗАПРОСЫ (с обходом CORS) ==========
         async function fetchFromKodik(endpoint, params = {}) {
             const urlParams = new URLSearchParams({
                 token: CONFIG.TOKEN,
@@ -762,22 +722,201 @@
                 with_material_data: 'true',
                 ...params
             });
-            const targetUrl = `${CONFIG.API_URL}${endpoint}?${urlParams.toString()}`;
-            const finalUrl = CONFIG.CORS_PROXY + encodeURIComponent(targetUrl);
-            
-            const response = await fetch(finalUrl);
-            if (!response.ok) throw new Error('Ошибка сети');
-            return await response.json();
+
+            // Используем несколько способов обхода CORS
+            const urls = [
+                // Способ 1: Прямой запрос (может не работать из-за CORS)
+                `${CONFIG.API_URL}${endpoint}?${urlParams.toString()}`,
+                // Способ 2: Через corsproxy.io
+                `https://corsproxy.io/?${encodeURIComponent(`${CONFIG.API_URL}${endpoint}?${urlParams.toString()}`)}`,
+                // Способ 3: Через api.allorigins.win
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(`${CONFIG.API_URL}${endpoint}?${urlParams.toString()}`)}`,
+                // Способ 4: Через corsproxy.org
+                `https://corsproxy.org/?${encodeURIComponent(`${CONFIG.API_URL}${endpoint}?${urlParams.toString()}`)}`
+            ];
+
+            let lastError = null;
+
+            for (const url of urls) {
+                try {
+                    dom.debugInfo.style.display = 'block';
+                    dom.debugInfo.textContent = `Попытка запроса: ${url.substring(0, 100)}...`;
+
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    // Проверяем, что данные корректные
+                    if (data && typeof data === 'object') {
+                        dom.debugInfo.textContent = `✅ Успешно! Получено ${data.results?.length || 0} результатов`;
+                        return data;
+                    }
+
+                    throw new Error('Неверный формат ответа');
+
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`Ошибка при запросе к ${url}:`, error);
+                    continue;
+                }
+            }
+
+            // Если все способы не сработали, используем тестовые данные
+            dom.debugInfo.textContent = `⚠️ Все прокси не работают. Используем тестовые данные.`;
+            console.warn('Все запросы failed:', lastError);
+            return getMockData(endpoint, params);
+        }
+
+        // ========== ТЕСТОВЫЕ ДАННЫЕ (на случай, если API не отвечает) ==========
+        function getMockData(endpoint, params) {
+            const mockAnime = [
+                {
+                    id: 'serial-1',
+                    shikimori_id: '1',
+                    title: 'Тёмный дворецкий',
+                    title_orig: 'Black Butler',
+                    year: 2008,
+                    last_episode: 24,
+                    translation: { id: 1, title: 'AniDUB' },
+                    material_data: {
+                        poster_url: 'https://i.kodik.biz/posters/anime/1.jpg',
+                        anime_title: 'Тёмный дворецкий',
+                        description: 'Молодой граф Сиэль Фантомхайв заключает договор с демоном Себастьяном, чтобы отомстить за смерть родителей.',
+                        anime_kind: 'tv',
+                        anime_status: 'released',
+                        anime_genres: ['Демоны', 'Драма', 'Фэнтези'],
+                        anime_studios: ['A-1 Pictures'],
+                        shikimori_rating: 8.7,
+                        kinopoisk_rating: 8.2
+                    },
+                    link: '//kodik.info/serial/1/player'
+                },
+                {
+                    id: 'serial-2',
+                    shikimori_id: '2',
+                    title: 'Стальной алхимик',
+                    title_orig: 'Fullmetal Alchemist',
+                    year: 2003,
+                    last_episode: 51,
+                    translation: { id: 2, title: 'AniLibria' },
+                    material_data: {
+                        poster_url: 'https://i.kodik.biz/posters/anime/2.jpg',
+                        anime_title: 'Стальной алхимик',
+                        description: 'Братья Элрики ищут философский камень, чтобы вернуть свои тела после неудачного алхимического ритуала.',
+                        anime_kind: 'tv',
+                        anime_status: 'released',
+                        anime_genres: ['Приключения', 'Драма', 'Фэнтези'],
+                        anime_studios: ['Bones'],
+                        shikimori_rating: 9.1,
+                        kinopoisk_rating: 8.6
+                    },
+                    link: '//kodik.info/serial/2/player'
+                },
+                {
+                    id: 'serial-3',
+                    shikimori_id: '3',
+                    title: 'Атака титанов',
+                    title_orig: 'Attack on Titan',
+                    year: 2013,
+                    last_episode: 25,
+                    translation: { id: 3, title: 'AniDUB' },
+                    material_data: {
+                        poster_url: 'https://i.kodik.biz/posters/anime/3.jpg',
+                        anime_title: 'Атака титанов',
+                        description: 'Человечество живёт за огромными стенами, защищаясь от титанов - гигантских существ, пожирающих людей.',
+                        anime_kind: 'tv',
+                        anime_status: 'ongoing',
+                        anime_genres: ['Экшен', 'Драма', 'Фэнтези'],
+                        anime_studios: ['Wit Studio'],
+                        shikimori_rating: 9.0,
+                        kinopoisk_rating: 8.5
+                    },
+                    link: '//kodik.info/serial/3/player'
+                },
+                {
+                    id: 'serial-4',
+                    shikimori_id: '4',
+                    title: 'Врата Штейна',
+                    title_orig: 'Steins;Gate',
+                    year: 2011,
+                    last_episode: 24,
+                    translation: { id: 4, title: 'AniLibria' },
+                    material_data: {
+                        poster_url: 'https://i.kodik.biz/posters/anime/4.jpg',
+                        anime_title: 'Врата Штейна',
+                        description: 'Группа студентов случайно изобретает устройство для отправки сообщений в прошлое, что приводит к непредсказуемым последствиям.',
+                        anime_kind: 'tv',
+                        anime_status: 'released',
+                        anime_genres: ['Научная фантастика', 'Триллер', 'Драма'],
+                        anime_studios: ['White Fox'],
+                        shikimori_rating: 9.2,
+                        kinopoisk_rating: 8.8
+                    },
+                    link: '//kodik.info/serial/4/player'
+                },
+                {
+                    id: 'serial-5',
+                    shikimori_id: '5',
+                    title: 'Мастера меча онлайн',
+                    title_orig: 'Sword Art Online',
+                    year: 2012,
+                    last_episode: 25,
+                    translation: { id: 5, title: 'AniDUB' },
+                    material_data: {
+                        poster_url: 'https://i.kodik.biz/posters/anime/5.jpg',
+                        anime_title: 'Мастера меча онлайн',
+                        description: 'Тысячи игроков оказываются запертыми в виртуальной MMORPG, где смерть в игре означает смерть в реальности.',
+                        anime_kind: 'tv',
+                        anime_status: 'released',
+                        anime_genres: ['Экшен', 'Приключения', 'Романтика'],
+                        anime_studios: ['A-1 Pictures'],
+                        shikimori_rating: 8.3,
+                        kinopoisk_rating: 7.9
+                    },
+                    link: '//kodik.info/serial/5/player'
+                }
+            ];
+
+            // Имитация поиска
+            if (params.title) {
+                const query = params.title.toLowerCase();
+                const filtered = mockAnime.filter(a => 
+                    a.title.toLowerCase().includes(query) || 
+                    a.title_orig.toLowerCase().includes(query)
+                );
+                return { 
+                    total: filtered.length, 
+                    results: filtered,
+                    time: '1ms'
+                };
+            }
+
+            // Возвращаем все для списка
+            return { 
+                total: mockAnime.length, 
+                results: mockAnime,
+                time: '1ms'
+            };
         }
 
         // ========== ЗАГРУЗКА ДАННЫХ ==========
         async function loadAnimeData() {
             dom.animeContainer.innerHTML = '<div class="loading-text">Загрузка...</div>';
-            
+
             try {
                 let data;
                 let params = { page: state.currentPage };
-                
+
                 if (state.currentMode === 'list') {
                     dom.sectionTitle.textContent = 'Недавно добавленные';
                     params.types = 'anime-serial,anime';
@@ -787,14 +926,32 @@
                     if (state.searchQuery) params.title = state.searchQuery;
                     data = await fetchFromKodik('/search', params);
                 }
-                
+
+                state.totalItems = data.total || data.results?.length || 0;
                 state.rawAnimeData = data.results || [];
+
+                // Если результатов нет, показываем сообщение
+                if (state.rawAnimeData.length === 0) {
+                    dom.animeContainer.innerHTML = '<div class="empty-text">Ничего не найдено</div>';
+                    dom.paginationControls.classList.add('hidden');
+                    return;
+                }
+
                 state.currentAnimeList = deduplicateAnime(state.rawAnimeData);
                 renderCatalog();
-                renderPagination(data.total);
+                renderPagination();
+
             } catch (error) {
-                console.error(error);
-                dom.animeContainer.innerHTML = '<div class="empty-text">Ошибка загрузки данных</div>';
+                console.error('Ошибка загрузки:', error);
+                dom.animeContainer.innerHTML = `
+                    <div class="empty-text">
+                        Ошибка загрузки данных. 
+                        <br><br>
+                        <button onclick="loadAnimeData()" style="padding:0.5rem 1.5rem;border-radius:12px;border:none;background:#818cf8;color:#fff;cursor:pointer;">
+                            🔄 Попробовать снова
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -811,7 +968,7 @@
         // ========== ОТРИСОВКА КАТАЛОГА ==========
         function renderCatalog() {
             dom.animeContainer.innerHTML = '';
-            
+
             if (state.currentAnimeList.length === 0) {
                 dom.animeContainer.innerHTML = '<div class="empty-text">Ничего не найдено</div>';
                 return;
@@ -824,7 +981,7 @@
                 const rating = mData.shikimori_rating || mData.kinopoisk_rating || null;
                 const year = anime.year || mData.year || '';
                 const kind = mData.anime_kind ? translateKind(mData.anime_kind) : '';
-                
+
                 const card = document.createElement('div');
                 card.className = 'anime-card';
                 card.innerHTML = `
@@ -840,13 +997,13 @@
                         <div class="card-meta">${year} ${kind ? '• ' + kind : ''}</div>
                     </div>
                 `;
-                
+
                 card.addEventListener('click', () => {
                     const id = anime.shikimori_id || anime.id;
                     state.currentAnimeId = id;
                     loadAnimeDetails(id);
                 });
-                
+
                 dom.animeContainer.appendChild(card);
             });
         }
@@ -854,74 +1011,79 @@
         // ========== ДЕТАЛЬНАЯ СТРАНИЦА ==========
         async function loadAnimeDetails(uniqueId) {
             try {
-                const variants = state.rawAnimeData.filter(item => 
+                const variants = state.rawAnimeData.filter(item =>
                     (item.shikimori_id || item.id) == uniqueId
                 );
-                
+
                 if (variants.length === 0) {
-                    // Если данных нет, делаем новый запрос
+                    // Пытаемся найти через поиск
                     const data = await fetchFromKodik('/search', { shikimori_id: uniqueId });
                     state.rawAnimeData = data.results || [];
-                    const newVariants = state.rawAnimeData.filter(item => 
+                    const newVariants = state.rawAnimeData.filter(item =>
                         (item.shikimori_id || item.id) == uniqueId
                     );
-                    if (newVariants.length === 0) return;
+                    if (newVariants.length === 0) {
+                        dom.detailTitle.textContent = 'Аниме не найдено';
+                        return;
+                    }
                     showAnimeDetails(newVariants);
                 } else {
                     showAnimeDetails(variants);
                 }
             } catch (error) {
                 console.error('Ошибка загрузки деталей:', error);
+                dom.detailTitle.textContent = 'Ошибка загрузки';
             }
         }
 
         function showAnimeDetails(variants) {
             const primary = variants[0];
             const mData = primary.material_data || {};
-            
+
             // Постер
-            dom.detailPoster.src = mData.poster_url || (primary.screenshots && primary.screenshots[0]) || 
-                                   'https://via.placeholder.com/280x400/1a1a2e/818cf8?text=No+Image';
+            dom.detailPoster.src = mData.poster_url || (primary.screenshots && primary.screenshots[0]) ||
+                'https://via.placeholder.com/280x400/1a1a2e/818cf8?text=No+Image';
             dom.detailPoster.onerror = function() {
                 this.src = 'https://via.placeholder.com/280x400/1a1a2e/818cf8?text=No+Image';
             };
-            
+
             // Название
             dom.detailTitle.textContent = primary.title || mData.anime_title || 'Без названия';
             dom.detailOrigTitle.textContent = primary.title_orig || mData.title_en || '';
-            
+
             // Рейтинги
             const ratings = [];
             if (mData.shikimori_rating) ratings.push(`Shikimori: ${mData.shikimori_rating}`);
             if (mData.kinopoisk_rating) ratings.push(`Кинопоиск: ${mData.kinopoisk_rating}`);
             if (mData.imdb_rating) ratings.push(`IMDb: ${mData.imdb_rating}`);
-            
-            dom.detailRatings.innerHTML = ratings.map(r => 
+
+            dom.detailRatings.innerHTML = ratings.map(r =>
                 `<span class="detail-rating-item">★ <span class="score">${r}</span></span>`
-            ).join('');
-            
+            ).join('') || '<span class="detail-rating-item">Нет рейтинга</span>';
+
             // Описание
             dom.detailDescription.textContent = mData.description || 'Описание отсутствует.';
-            
+
             // Мета-данные
             const metaData = [
                 { label: 'Год', value: primary.year || mData.year || '-' },
                 { label: 'Тип', value: translateKind(mData.anime_kind || '') },
                 { label: 'Статус', value: translateStatus(mData.anime_status || '') },
                 { label: 'Жанры', value: (mData.anime_genres || []).join(', ') || '-' },
-                { label: 'Студия', value: (mData.anime_studios || []).join(', ') || '-' }
+                { label: 'Студия', value: (mData.anime_studios || []).join(', ') || '-' },
+                { label: 'Эпизоды', value: primary.episodes_count || primary.last_episode || '-' }
             ];
-            
+
             dom.detailMeta.innerHTML = metaData.map(item => `
                 <div class="detail-meta-item">
                     <span class="label">${item.label}</span>
                     <span class="value">${item.value}</span>
                 </div>
             `).join('');
-            
+
             // Озвучки
             dom.voiceSelect.innerHTML = '<option value="">Выберите озвучку...</option>';
-            
+
             variants.forEach(variant => {
                 const opt = document.createElement('option');
                 const episodes = variant.last_episode ? ` (${variant.last_episode} серий)` : '';
@@ -929,66 +1091,59 @@
                 opt.value = variant.link;
                 dom.voiceSelect.appendChild(opt);
             });
-            
-            // Автоматически выбираем первую озвучку
+
+            // Автовыбор первой озвучки
             if (variants.length > 0) {
                 const firstLink = variants[0].link;
                 dom.voiceSelect.value = firstLink;
                 playVideo(firstLink);
             }
-            
+
             showScreen('detail');
         }
 
         // ========== ПЛЕЕР ==========
         function playVideo(link) {
             dom.playerError.style.display = 'none';
-            
+
             if (!link) {
                 dom.playerError.style.display = 'block';
                 dom.player.src = '';
                 return;
             }
-            
-            // Преобразуем ссылку для правильной работы плеера
+
+            // Форматируем ссылку для плеера
             let playerUrl = link;
-            
-            // Если ссылка начинается с //, добавляем https:
+
+            // Добавляем https если нужно
             if (playerUrl.startsWith('//')) {
                 playerUrl = 'https:' + playerUrl;
             }
-            
-            // Если это ссылка на сериал, добавляем параметры для плеера
-            if (playerUrl.includes('/serial/') && !playerUrl.includes('?')) {
-                playerUrl += '?player=1&series=1';
+
+            // Добавляем параметры для правильной работы
+            if (!playerUrl.includes('?')) {
+                if (playerUrl.includes('/serial/')) {
+                    playerUrl += '?player=1&series=1';
+                } else if (playerUrl.includes('/video/')) {
+                    playerUrl += '?player=1';
+                }
             }
-            
-            // Если это ссылка на видео, добавляем параметр
-            if (playerUrl.includes('/video/') && !playerUrl.includes('?')) {
-                playerUrl += '?player=1';
-            }
-            
-            // Добавляем параметр для переключения источника
-            const source = dom.sourceSelect.value;
-            if (!playerUrl.includes('source=')) {
-                playerUrl += (playerUrl.includes('?') ? '&' : '?') + 'source=' + source;
-            }
-            
-            console.log('Загрузка плеера:', playerUrl);
+
+            console.log('🎬 Загрузка плеера:', playerUrl);
             dom.player.src = playerUrl;
-            
-            // Обработчик ошибок плеера
+
+            // Обработка ошибок
             dom.player.onerror = function() {
                 dom.playerError.style.display = 'block';
                 dom.player.src = '';
             };
-            
-            // Таймаут, если плеер не загружается
+
+            // Таймаут проверки
             setTimeout(() => {
                 if (!dom.player.src) {
                     dom.playerError.style.display = 'block';
                 }
-            }, 10000);
+            }, 8000);
         }
 
         // ========== УПРАВЛЕНИЕ ЭКРАНАМИ ==========
@@ -1007,7 +1162,38 @@
         }
 
         // ========== ПАГИНАЦИЯ ==========
-        function renderPagination(totalCount) {
+        function renderPagination() {
+            const totalPages = Math.ceil(state.totalItems / CONFIG.LIMIT);
             dom.btnPrev.disabled = state.currentPage === 1;
-            dom.btnNext.disabled = !totalCount || (state.currentPage *
-                                                   
+            dom.btnNext.disabled = state.currentPage >= totalPages;
+
+            if (totalPages <= 1 && state.currentMode === 'list') {
+                dom.paginationControls.classList.add('hidden');
+            } else {
+                dom.paginationControls.classList.remove('hidden');
+            }
+        }
+
+        // ========== ПЕРЕВОДЫ ==========
+        function translateKind(kind) {
+            const mapping = {
+                'tv': 'ТВ-сериал',
+                'movie': 'Фильм',
+                'ova': 'OVA',
+                'ona': 'ONA',
+                'special': 'Спецвыпуск'
+            };
+            return mapping[kind.toLowerCase()] || kind;
+        }
+
+        function translateStatus(status) {
+            const mapping = {
+                'released': 'Вышло',
+                'ongoing': 'Выходит',
+                'anons': 'Анонсировано'
+            };
+            return mapping[status.toLowerCase()] || status;
+        }
+    </script>
+</body>
+</html>
