@@ -5,591 +5,240 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeGlass</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, sans-serif;
-        }
-
-        body {
-            background: #0d0f14;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 1.5rem;
-            color: #f0f3fa;
-        }
-
-        .app {
-            max-width: 1280px;
-            width: 100%;
-            background: rgba(20, 25, 35, 0.45);
-            backdrop-filter: blur(12px);
-            border-radius: 2.5rem;
-            padding: 2rem;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-
-        .header {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1.2rem;
-            margin-bottom: 2rem;
-        }
-
-        .logo {
-            font-size: 1.9rem;
-            font-weight: 600;
-            background: linear-gradient(145deg, #d4e0ff, #a0b9ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .search-input {
-            flex: 1 1 240px;
-            padding: 0.7rem 1.2rem;
-            border-radius: 60px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            background: rgba(12, 16, 24, 0.7);
-            color: #f0f3fa;
-            font-size: 0.95rem;
-            outline: none;
-        }
-        .search-input::placeholder {
-            color: #7b88a3;
-        }
-        .search-input:focus {
-            border-color: #7d9cff;
-        }
-
-        .player-section {
-            background: rgba(10, 14, 22, 0.4);
-            backdrop-filter: blur(4px);
-            border-radius: 2rem;
-            padding: 1.2rem;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            margin-bottom: 1.8rem;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 0.6rem;
-            margin-bottom: 1.2rem;
-            flex-wrap: wrap;
-        }
-
-        .tab-btn {
-            background: rgba(30, 38, 54, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            padding: 0.55rem 1.6rem;
-            border-radius: 40px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #b2c3e0;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .tab-btn:hover {
-            background: rgba(60, 80, 130, 0.5);
-            color: #ffffff;
-            transform: scale(1.02);
-        }
-        .tab-btn.active {
-            background: rgba(70, 120, 255, 0.25);
-            border-color: #6b93ff;
-            color: white;
-            box-shadow: 0 0 20px rgba(80, 140, 255, 0.15);
-        }
-
-        .player-container {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background: #080b10;
-            border-radius: 1.5rem;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .player-container iframe {
-            width: 100%;
-            height: 100%;
-            border: 0;
-            display: block;
-            background: #0a0d12;
-        }
-
-        .player-container .placeholder {
-            color: #48526b;
-            font-size: 1.2rem;
-            text-align: center;
-            padding: 1rem;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-
-        .info-block {
-            margin-top: 1.8rem;
-        }
-
-        .title-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: baseline;
-            gap: 0.6rem 1.2rem;
-        }
-
-        .anime-title {
-            font-size: 1.8rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #f0f4ff, #c6d9ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .rating {
-            background: rgba(255, 215, 0, 0.08);
-            padding: 0.2rem 1rem;
-            border-radius: 40px;
-            border: 1px solid rgba(255, 215, 0, 0.1);
-            color: #f5d742;
-            display: inline-flex;
-            align-items: center;
-        }
-        .rating::before {
-            content: "★";
-            color: #f5b342;
-            margin-right: 0.3rem;
-        }
-
-        .description {
-            margin-top: 0.4rem;
-            color: #b8c9ed;
-            line-height: 1.5;
-            font-size: 0.98rem;
-            opacity: 0.9;
-        }
-
-        .episode-block {
-            margin-top: 2.2rem;
-        }
-
-        .episode-label {
-            font-size: 1.1rem;
-            color: #a7bae0;
-            margin-bottom: 0.9rem;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.8rem;
-        }
-
-        .anime-selector {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-left: auto;
-        }
-
-        .anime-selector select {
-            background: rgba(30, 38, 54, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #c6d4f0;
-            padding: 0.4rem 1rem;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            outline: none;
-        }
-        .anime-selector select:hover {
-            border-color: rgba(130, 180, 255, 0.3);
-        }
-        .anime-selector select option {
-            background: #1a1f2b;
-            color: #f0f3fa;
-        }
-
-        .episode-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .ep-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 3.4rem;
-            height: 3.4rem;
-            border-radius: 18px;
-            background: rgba(30, 40, 60, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            color: #c6d4f0;
-            font-size: 1.1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .ep-btn:hover {
-            background: rgba(70, 110, 220, 0.3);
-            border-color: rgba(130, 180, 255, 0.3);
-            transform: translateY(-3px);
-            color: white;
-        }
-        .ep-btn.active {
-            background: rgba(70, 130, 255, 0.35);
-            border-color: #6b93ff;
-            color: white;
-            box-shadow: 0 0 20px rgba(70, 130, 255, 0.25);
-        }
-
-        @media (max-width: 720px) {
-            .app {
-                padding: 1.2rem;
-            }
-            .anime-title {
-                font-size: 1.4rem;
-            }
-            .ep-btn {
-                width: 2.9rem;
-                height: 2.9rem;
-                font-size: 0.95rem;
-            }
-            .tab-btn {
-                padding: 0.4rem 1.2rem;
-                font-size: 0.85rem;
-            }
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .anime-selector {
-                margin-left: 0;
-                width: 100%;
-            }
-            .anime-selector select {
-                width: 100%;
-            }
-        }
-
-        .footer-meta {
-            font-size: 0.7rem;
-            color: #48526b;
-            margin-top: 1rem;
-            text-align: right;
-            opacity: 0.5;
-        }
-
-        .video-info {
-            font-size: 0.75rem;
-            color: #7b88a3;
-            text-align: center;
-            margin-top: 0.5rem;
-        }
+        *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+        body{background:#0d0f14;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:1.5rem;color:#f0f3fa}
+        .app{max-width:1280px;width:100%;background:rgba(20,25,35,0.45);backdrop-filter:blur(12px);border-radius:2.5rem;padding:2rem;box-shadow:0 25px 45px -12px rgba(0,0,0,0.8);border:1px solid rgba(255,255,255,0.03)}
+        .header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1.2rem;margin-bottom:2rem}
+        .logo{font-size:1.9rem;font-weight:600;background:linear-gradient(145deg,#d4e0ff,#a0b9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .search-input{flex:1 1 240px;padding:.7rem 1.2rem;border-radius:60px;border:1px solid rgba(255,255,255,0.06);background:rgba(12,16,24,0.7);color:#f0f3fa;font-size:.95rem;outline:0}
+        .search-input::placeholder{color:#7b88a3}
+        .search-input:focus{border-color:#7d9cff}
+        .player-section{background:rgba(10,14,22,0.4);backdrop-filter:blur(4px);border-radius:2rem;padding:1.2rem;border:1px solid rgba(255,255,255,0.03);margin-bottom:1.8rem}
+        .tabs{display:flex;gap:.6rem;margin-bottom:1.2rem;flex-wrap:wrap}
+        .tab-btn{background:rgba(30,38,54,0.5);border:1px solid rgba(255,255,255,0.04);padding:.55rem 1.6rem;border-radius:40px;font-size:.95rem;font-weight:500;color:#b2c3e0;cursor:pointer;transition:all .2s}
+        .tab-btn:hover{background:rgba(60,80,130,0.5);color:#fff;transform:scale(1.02)}
+        .tab-btn.active{background:rgba(70,120,255,0.25);border-color:#6b93ff;color:#fff;box-shadow:0 0 20px rgba(80,140,255,0.15)}
+        .player-container{width:100%;aspect-ratio:16/9;background:#080b10;border-radius:1.5rem;overflow:hidden;position:relative}
+        .player-container iframe{width:100%;height:100%;border:0;display:block;background:#0a0d12}
+        .player-container .placeholder{color:#48526b;font-size:1.2rem;text-align:center;padding:1rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+        .info-block{margin-top:1.8rem}
+        .title-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:.6rem 1.2rem}
+        .anime-title{font-size:1.8rem;font-weight:600;background:linear-gradient(135deg,#f0f4ff,#c6d9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .rating{background:rgba(255,215,0,0.08);padding:.2rem 1rem;border-radius:40px;border:1px solid rgba(255,215,0,0.1);color:#f5d742;display:inline-flex;align-items:center}
+        .rating::before{content:"★";color:#f5b342;margin-right:.3rem}
+        .description{margin-top:.4rem;color:#b8c9ed;line-height:1.5;font-size:.98rem;opacity:.9}
+        .episode-block{margin-top:2.2rem}
+        .episode-label{font-size:1.1rem;color:#a7bae0;margin-bottom:.9rem;display:flex;flex-wrap:wrap;align-items:center;gap:.8rem}
+        .anime-selector{display:flex;gap:.5rem;flex-wrap:wrap;margin-left:auto}
+        .anime-selector select{background:rgba(30,38,54,0.6);border:1px solid rgba(255,255,255,0.08);color:#c6d4f0;padding:.4rem 1rem;border-radius:30px;font-size:.85rem;cursor:pointer;outline:0}
+        .anime-selector select:hover{border-color:rgba(130,180,255,0.3)}
+        .anime-selector select option{background:#1a1f2b;color:#f0f3fa}
+        .episode-grid{display:flex;flex-wrap:wrap;gap:.75rem}
+        .ep-btn{display:flex;align-items:center;justify-content:center;width:3.4rem;height:3.4rem;border-radius:18px;background:rgba(30,40,60,0.4);border:1px solid rgba(255,255,255,0.04);color:#c6d4f0;font-size:1.1rem;font-weight:500;cursor:pointer;transition:all .2s}
+        .ep-btn:hover{background:rgba(70,110,220,0.3);border-color:rgba(130,180,255,0.3);transform:translateY(-3px);color:#fff}
+        .ep-btn.active{background:rgba(70,130,255,0.35);border-color:#6b93ff;color:#fff;box-shadow:0 0 20px rgba(70,130,255,0.25)}
+        @media(max-width:720px){.app{padding:1.2rem}.anime-title{font-size:1.4rem}.ep-btn{width:2.9rem;height:2.9rem;font-size:.95rem}.tab-btn{padding:.4rem 1.2rem;font-size:.85rem}.header{flex-direction:column;align-items:stretch}.anime-selector{margin-left:0;width:100%}.anime-selector select{width:100%}}
+        .footer-meta{font-size:.7rem;color:#48526b;margin-top:1rem;text-align:right;opacity:.5}
+        .video-info{font-size:.75rem;color:#7b88a3;text-align:center;margin-top:.5rem}
     </style>
 </head>
 <body>
-    <div class="app">
-        <header class="header">
-            <div class="logo">✦ AnimeGlass</div>
-            <input class="search-input" type="text" placeholder="Поиск аниме..." id="searchInput">
-        </header>
+<div class="app">
+    <header class="header">
+        <div class="logo">✦ AnimeGlass</div>
+        <input class="search-input" type="text" placeholder="Поиск аниме..." id="searchInput">
+    </header>
 
-        <section class="player-section">
-            <div class="tabs">
-                <button class="tab-btn active" data-player="kodik">📺 Kodik</button>
-                <button class="tab-btn" data-player="alloha">🎞️ Alloha</button>
-            </div>
-
-            <div class="player-container" id="playerContainer">
-                <div id="placeholder" class="placeholder">📺 Выберите аниме из списка</div>
-                <iframe id="playerIframe" src="" allowfullscreen allow="autoplay; encrypted-media; fullscreen" style="display:none;"></iframe>
-            </div>
-            <div class="video-info" id="videoInfo">💡 Выберите аниме из списка ниже</div>
-
-            <div class="info-block">
-                <div class="title-row">
-                    <h1 class="anime-title" id="animeTitle">Тёмный дворецкий</h1>
-                    <span class="rating" id="animeRating">8.7</span>
-                </div>
-                <p class="description" id="animeDescription">Молодой граф Сиэль Фантомхайв заключает контракт с демоном, чтобы отомстить за гибель семьи.</p>
-            </div>
-        </section>
-
-        <div class="episode-block">
-            <div class="episode-label">
-                <span>Список серий</span>
-                <span id="episodeCount">1–12</span>
-                <div class="anime-selector">
-                    <select id="animeSelect">
-                        <option value="0">Тёмный дворецкий</option>
-                        <option value="1">Наруто</option>
-                        <option value="2">Атака Титанов</option>
-                        <option value="3">Ван-Пис</option>
-                        <option value="4">Магическая битва</option>
-                        <option value="5">Клинок, рассекающий демонов</option>
-                    </select>
-                </div>
-            </div>
-            <div class="episode-grid" id="episodeGrid"></div>
+    <section class="player-section">
+        <div class="tabs">
+            <button class="tab-btn active" data-player="kodik">📺 Kodik</button>
+            <button class="tab-btn" data-player="alloha">🎞️ Alloha</button>
         </div>
-        <div class="footer-meta">• плеер запоминает выбор •</div>
+
+        <div class="player-container" id="playerContainer">
+            <div id="placeholder" class="placeholder">📺 Выберите аниме из списка</div>
+            <iframe id="playerIframe" src="" allowfullscreen allow="autoplay; encrypted-media; fullscreen" style="display:none;"></iframe>
+        </div>
+        <div class="video-info" id="videoInfo">💡 Выберите аниме из списка ниже</div>
+
+        <div class="info-block">
+            <div class="title-row">
+                <h1 class="anime-title" id="animeTitle">Тёмный дворецкий</h1>
+                <span class="rating" id="animeRating">8.7</span>
+            </div>
+            <p class="description" id="animeDescription">Молодой граф Сиэль Фантомхайв заключает контракт с демоном, чтобы отомстить за гибель семьи.</p>
+        </div>
+    </section>
+
+    <div class="episode-block">
+        <div class="episode-label">
+            <span>Список серий</span>
+            <span id="episodeCount">1–12</span>
+            <div class="anime-selector">
+                <select id="animeSelect">
+                    <option value="0">Тёмный дворецкий</option>
+                    <option value="1">Наруто</option>
+                    <option value="2">Атака Титанов</option>
+                    <option value="3">Ван-Пис</option>
+                    <option value="4">Магическая битва</option>
+                    <option value="5">Клинок, рассекающий демонов</option>
+                </select>
+            </div>
+        </div>
+        <div class="episode-grid" id="episodeGrid"></div>
     </div>
+    <div class="footer-meta">• плеер запоминает выбор •</div>
+</div>
 
-    <script>
-        // ================================================================
-        //  🎬  БАЗА АНИМЕ
-        //  kodik_id — ID на Kodik
-        //  alloha_id — ID на Alloha
-        //  episodes — количество серий
-        // ================================================================
-        const ANIME_DB = [{
-            id: 0,
-            title: "Тёмный дворецкий",
-            rating: "8.7",
-            description: "Молодой граф Сиэль Фантомхайв заключает контракт с демоном.",
-            kodik_id: "40589",
-            alloha_id: "256",
-            episodes: 12
-        }, {
-            id: 1,
-            title: "Наруто",
-            rating: "8.5",
-            description: "История о юном ниндзя Наруто Узумаки.",
-            kodik_id: "10",
-            alloha_id: "10",
-            episodes: 220
-        }, {
-            id: 2,
-            title: "Атака Титанов",
-            rating: "9.0",
-            description: "Человечество живёт за стенами, спасаясь от Титанов.",
-            kodik_id: "246",
-            alloha_id: "246",
-            episodes: 87
-        }, {
-            id: 3,
-            title: "Ван-Пис",
-            rating: "9.2",
-            description: "Пират Монки Д. Луффи ищет легендарное сокровище.",
-            kodik_id: "5",
-            alloha_id: "5",
-            episodes: 1100
-        }, {
-            id: 4,
-            title: "Магическая битва",
-            rating: "8.9",
-            description: "Юдзи Итадори становится вместилищем демона Сукуны.",
-            kodik_id: "38289",
-            alloha_id: "38289",
-            episodes: 24
-        }, {
-            id: 5,
-            title: "Клинок, рассекающий демонов",
-            rating: "9.1",
-            description: "Тандзиро Камадо охотится на демонов.",
-            kodik_id: "40590",
-            alloha_id: "40590",
-            episodes: 44
-        }];
+<script>
+const ANIME_DB=[
+{id:0,title:"Тёмный дворецкий",rating:"8.7",description:"Молодой граф Сиэль Фантомхайв заключает контракт с демоном.",kodik_id:"40589",alloha_id:"256",episodes:12},
+{id:1,title:"Наруто",rating:"8.5",description:"История о юном ниндзя Наруто Узумаки.",kodik_id:"10",alloha_id:"10",episodes:220},
+{id:2,title:"Атака Титанов",rating:"9.0",description:"Человечество живёт за стенами, спасаясь от Титанов.",kodik_id:"246",alloha_id:"246",episodes:87},
+{id:3,title:"Ван-Пис",rating:"9.2",description:"Пират Монки Д. Луффи ищет легендарное сокровище.",kodik_id:"5",alloha_id:"5",episodes:1100},
+{id:4,title:"Магическая битва",rating:"8.9",description:"Юдзи Итадори становится вместилищем демона Сукуны.",kodik_id:"38289",alloha_id:"38289",episodes:24},
+{id:5,title:"Клинок, рассекающий демонов",rating:"9.1",description:"Тандзиро Камадо охотится на демонов.",kodik_id:"40590",alloha_id:"40590",episodes:44}
+];
 
-        // ================================================================
+const iframe=document.getElementById('playerIframe');
+const placeholder=document.getElementById('placeholder');
+const videoInfo=document.getElementById('videoInfo');
+const tabBtns=document.querySelectorAll('.tab-btn');
+const epGrid=document.getElementById('episodeGrid');
+const animeSelect=document.getElementById('animeSelect');
+const animeTitle=document.getElementById('animeTitle');
+const animeRating=document.getElementById('animeRating');
+const animeDescription=document.getElementById('animeDescription');
+const episodeCount=document.getElementById('episodeCount');
+const searchInput=document.getElementById('searchInput');
 
-        // DOM элементы
-        const iframe = document.getElementById('playerIframe');
-        const placeholder = document.getElementById('placeholder');
-        const videoInfo = document.getElementById('videoInfo');
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const epGrid = document.getElementById('episodeGrid');
-        const animeSelect = document.getElementById('animeSelect');
-        const animeTitle = document.getElementById('animeTitle');
-        const animeRating = document.getElementById('animeRating');
-        const animeDescription = document.getElementById('animeDescription');
-        const episodeCount = document.getElementById('episodeCount');
-        const searchInput = document.getElementById('searchInput');
+let currentSource='kodik';
+let currentEpisode=1;
+let currentAnimeId=0;
 
-        let currentSource = 'kodik';
-        let currentEpisode = 1;
-        let currentAnimeId = 0;
+function getCurrentAnime(){return ANIME_DB[currentAnimeId]||ANIME_DB[0];}
 
-        // Получить текущее аниме
-        function getCurrentAnime() {
-            return ANIME_DB[currentAnimeId] || ANIME_DB[0];
-        }
+function updateAnimeInfo(){
+const anime=getCurrentAnime();
+animeTitle.textContent=anime.title;
+animeRating.textContent=anime.rating;
+animeDescription.textContent=anime.description;
+episodeCount.textContent='1–'+anime.episodes;
+document.title='AnimeGlass · '+anime.title;
+animeSelect.value=currentAnimeId;
+}
 
-        // Обновить информацию об аниме
-        function updateAnimeInfo() {
-            const anime = getCurrentAnime();
-            animeTitle.textContent = anime.title;
-            animeRating.textContent = anime.rating;
-            animeDescription.textContent = anime.description;
-            episodeCount.textContent = `1–${anime.episodes}`;
-            document.title = `AnimeGlass · ${anime.title}`;
-            animeSelect.value = currentAnimeId;
-        }
+function buildEpisodeButtons(){
+const anime=getCurrentAnime();
+epGrid.innerHTML='';
+const total=Math.min(anime.episodes,50);
+for(let i=1;i<=total;i++){
+const btn=document.createElement('button');
+btn.className='ep-btn';
+btn.textContent=i;
+btn.dataset.ep=i;
+if(i===currentEpisode)btn.classList.add('active');
+btn.addEventListener('click',function(){
+const ep=parseInt(this.dataset.ep,10);
+if(!isNaN(ep)&&ep>=1&&ep<=anime.episodes){
+currentEpisode=ep;
+localStorage.setItem('anime_episode',String(currentEpisode));
+document.querySelectorAll('.ep-btn').forEach(b=>b.classList.remove('active'));
+this.classList.add('active');
+updatePlayerSrc();
+}
+});
+epGrid.appendChild(btn);
+}
+if(anime.episodes>50){
+const moreBtn=document.createElement('button');
+moreBtn.className='ep-btn';
+moreBtn.textContent='...';
+moreBtn.style.width='auto';
+moreBtn.style.padding='0 1rem';
+moreBtn.title='Всего '+anime.episodes+' серий';
+moreBtn.addEventListener('click',function(){alert('Всего '+anime.episodes+' серий. Показаны первые 50.');});
+epGrid.appendChild(moreBtn);
+}
+}
 
-        // Построить кнопки серий
-        function buildEpisodeButtons() {
-            const anime = getCurrentAnime();
-            epGrid.innerHTML = '';
-            const total = Math.min(anime.episodes, 50);
+function updatePlayerSrc(){
+const anime=getCurrentAnime();
+let url='';
+placeholder.style.display='flex';
+placeholder.textContent='⏳ Загрузка...';
+iframe.style.display='none';
+if(currentSource==='kodik'){
+url='https://kodik.info/series/'+anime.kodik_id+'/'+currentEpisode+'/';
+}else{
+url='https://alloha.app/embed/'+anime.alloha_id+'/?ep='+currentEpisode;
+}
+iframe.src=url;
+iframe.style.display='block';
+placeholder.style.display='none';
+videoInfo.textContent='▶️ '+currentSource.toUpperCase()+': '+anime.title+' — серия '+currentEpisode;
+console.log('✅ Загружено: '+url);
+}
 
-            for (let i = 1; i <= total; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'ep-btn';
-                btn.textContent = i;
-                btn.dataset.ep = i;
-                if (i === currentEpisode) {
-                    btn.classList.add('active');
-                }
-                btn.addEventListener('click', function() {
-                    const ep = parseInt(this.dataset.ep, 10);
-                    if (!isNaN(ep) && ep >= 1 && ep <= anime.episodes) {
-                        currentEpisode = ep;
-                        localStorage.setItem('anime_episode', String(currentEpisode));
-                        document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
-                        this.classList.add('active');
-                        updatePlayerSrc();
-                    }
-                });
-                epGrid.appendChild(btn);
-            }
+function updateTabsAndPlayer(){
+tabBtns.forEach(btn=>{
+const src=btn.dataset.player;
+if(src===currentSource){btn.classList.add('active');}
+else{btn.classList.remove('active');}
+});
+updatePlayerSrc();
+}
 
-            if (anime.episodes > 50) {
-                const moreBtn = document.createElement('button');
-                moreBtn.className = 'ep-btn';
-                moreBtn.textContent = '...';
-                moreBtn.style.width = 'auto';
-                moreBtn.style.padding = '0 1rem';
-                moreBtn.title = `Всего ${anime.episodes} серий`;
-                moreBtn.addEventListener('click', function() {
-                    alert(`Всего ${anime.episodes} серий. Показаны первые 50.`);
-                });
-                epGrid.appendChild(moreBtn);
-            }
-        }
+function init(){
+const savedSource=localStorage.getItem('anime_source');
+if(savedSource==='alloha'||savedSource==='kodik'){currentSource=savedSource;}
+const savedAnime=localStorage.getItem('anime_id');
+if(savedAnime){
+const idx=parseInt(savedAnime,10);
+if(!isNaN(idx)&&idx>=0&&idx<ANIME_DB.length){currentAnimeId=idx;animeSelect.value=idx;}
+}
+const savedEp=localStorage.getItem('anime_episode');
+if(savedEp){
+const epNum=parseInt(savedEp,10);
+const anime=getCurrentAnime();
+if(!isNaN(epNum)&&epNum>=1&&epNum<=anime.episodes){currentEpisode=epNum;}
+}
+updateAnimeInfo();
+buildEpisodeButtons();
+updateTabsAndPlayer();
 
-        // Обновить плеер
-        function updatePlayerSrc() {
-            const anime = getCurrentAnime();
-            let url = '';
+tabBtns.forEach(btn=>{
+btn.addEventListener('click',function(){
+const source=this.dataset.player;
+if(source==='kodik'||source==='alloha'){currentSource=source;localStorage.setItem('anime_source',currentSource);updateTabsAndPlayer();}
+});
+});
 
-            placeholder.style.display = 'flex';
-            placeholder.textContent = '⏳ Загрузка...';
-            iframe.style.display = 'none';
+animeSelect.addEventListener('change',function(){
+const idx=parseInt(this.value,10);
+if(!isNaN(idx)&&idx>=0&&idx<ANIME_DB.length){
+currentAnimeId=idx;
+localStorage.setItem('anime_id',String(currentAnimeId));
+const anime=getCurrentAnime();
+if(currentEpisode>anime.episodes){currentEpisode=1;localStorage.setItem('anime_episode',String(currentEpisode));}
+updateAnimeInfo();
+buildEpisodeButtons();
+updateTabsAndPlayer();
+}
+});
 
-            if (currentSource === 'kodik') {
-                url = `https://kodik.info/series/${anime.kodik_id}/${currentEpisode}/`;
-            } else {
-                url = `https://alloha.app/embed/${anime.alloha_id}/?ep=${currentEpisode}`;
-            }
+searchInput.addEventListener('input',function(){
+const query=this.value.toLowerCase().trim();
+const options=animeSelect.options;
+for(let i=0;i<options.length;i++){
+const text=options[i].textContent.toLowerCase();
+if(text.includes(query)||query===''){options[i].style.display='';}
+else{options[i].style.display='none';}
+}
+});
+}
 
-            iframe.src = url;
-            iframe.style.display = 'block';
-            placeholder.style.display = 'none';
-
-            videoInfo.textContent = `▶️ ${currentSource.toUpperCase()}: ${anime.title} — серия ${currentEpisode}`;
-            console.log(`✅ Загружено: ${url}`);
-        }
-
-        // Обновить табы
-        function updateTabsAndPlayer() {
-            tabBtns.forEach(btn => {
-                const src = btn.dataset.player;
-                if (src === currentSource) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-            updatePlayerSrc();
-        }
-
-        // ИНИЦИАЛИЗАЦИЯ
-        function init() {
-            // Загружаем сохранения
-            const savedSource = localStorage.getItem('anime_source');
-            if (savedSource === 'alloha' || savedSource === 'kodik') {
-                currentSource = savedSource;
-            }
-
-            const savedAnime = localStorage.getItem('anime_id');
-            if (savedAnime) {
-                const idx = parseInt(savedAnime, 10);
-                if (!isNaN(idx) && idx >= 0 && idx < ANIME_DB.length) {
-                    currentAnimeId = idx;
-                    animeSelect.value = idx;
-                }
-            }
-
-            const savedEp = localStorage.getItem('anime_episode');
-            if (savedEp) {
-                const epNum = parseInt(savedEp, 10);
-                const anime = getCurrentAnime();
-                if (!isNaN(epNum) && epNum >= 1 && epNum <= anime.episodes) {
-                    currentEpisode = epNum;
-                }
-            }
-
-            updateAnimeInfo();
-            buildEpisodeButtons();
-            updateTabsAndPlayer();
-
-            // Событие на табы
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const source = this.dataset.player;
-                    if (source === 'kodik' || source === 'alloha') {
-                        currentSource = source;
-                        localStorage.setItem('anime_source', currentSource);
-                        updateTabsAndPlayer();
-                    }
-                });
-            });
-
-            // Событие на выбор аниме
-            animeSelect.addEventListener('change', function() {
-                const idx = parseInt(this.value, 10);
-                if (!isNaN(idx) && idx >= 0 && idx < ANIME_DB.length) {
-                    currentAnimeId = idx;
-                    localStorage.setItem('anime_id', String(currentAnimeId));
-                    const anime = getCurrentAnime();
-                    if (currentEpisode > anime.episodes) {
-                        currentEpisode = 1;
-                        localStorage.setItem('anime_episode', String(currentEpisode));
-                    }
-                    updateAnimeInfo();
-                    buildEpisodeButtons();
-                    updateTabsAndPlayer();
-                }
-            });
-
-            // Поиск (фильтрация списка)
-            searchInput.addEventListener('input', function() {
-                const query = this.value.toLowerCase().trim();
-                const options = animeSelect.options;
-                for (let i = 0; i < options.length; i++) {
-                    const text = options[i].textContent.toLowerCase();
-                    if (text.includes(query) || query === '') {
-                        options[i].style.display = '';
-                    } else {
-                        options[i].style.display = 'none';
-                    }
-                }
-            });
-        }
-
-        // Запуск
-        init();
-    </script>
+init();
+</script>
 </body>
 </html>
