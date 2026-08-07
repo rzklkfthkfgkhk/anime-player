@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeGlass · плеер</title>
     <style>
         * {
@@ -108,20 +108,29 @@
         }
 
         .player-container {
-            position: relative;
             width: 100%;
             aspect-ratio: 16 / 9;
             background: #080b10;
             border-radius: 1.5rem;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .player-container iframe {
+        .player-container video {
             width: 100%;
             height: 100%;
-            border: 0;
             display: block;
             background: #0a0d12;
+            outline: none;
+        }
+
+        .player-container .placeholder {
+            color: #48526b;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 1rem;
         }
 
         .info-block {
@@ -181,30 +190,6 @@
             gap: 0.8rem;
         }
 
-        .anime-selector {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-left: auto;
-        }
-        .anime-selector select {
-            background: rgba(30, 38, 54, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #c6d4f0;
-            padding: 0.4rem 1rem;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            outline: none;
-        }
-        .anime-selector select:hover {
-            border-color: rgba(130, 180, 255, 0.3);
-        }
-        .anime-selector select option {
-            background: #1a1f2b;
-            color: #f0f3fa;
-        }
-
         .episode-grid {
             display: flex;
             flex-wrap: wrap;
@@ -259,13 +244,6 @@
                 flex-direction: column;
                 align-items: stretch;
             }
-            .anime-selector {
-                margin-left: 0;
-                width: 100%;
-            }
-            .anime-selector select {
-                width: 100%;
-            }
         }
 
         .footer-meta {
@@ -273,6 +251,13 @@
             color: #48526b;
             margin-top: 1rem;
             text-align: right;
+            opacity: 0.5;
+        }
+        .video-source-info {
+            font-size: 0.7rem;
+            color: #48526b;
+            margin-top: 0.5rem;
+            text-align: center;
             opacity: 0.5;
         }
     </style>
@@ -286,12 +271,17 @@
 
         <section class="player-section">
             <div class="tabs">
-                <button class="tab-btn active" data-player="kodik">Kodik</button>
+                <button class="tab-btn active" data-player="video">🎬 Видео</button>
+                <button class="tab-btn" data-player="kodik">Kodik</button>
                 <button class="tab-btn" data-player="alloha">Alloha</button>
             </div>
 
-            <div class="player-container">
-                <iframe id="playerIframe" src="" allowfullscreen allow="autoplay; encrypted-media; fullscreen"></iframe>
+            <div class="player-container" id="playerContainer">
+                <div id="placeholder" class="placeholder">📹 Выберите серию</div>
+                <video id="videoPlayer" controls preload="metadata" style="display:none;width:100%;height:100%;">
+                    <source id="videoSource" src="" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
             </div>
 
             <div class="info-block">
@@ -307,11 +297,6 @@
             <div class="episode-label">
                 <span>Список серий</span>
                 <span id="episodeCount">1–12</span>
-                <div class="anime-selector">
-                    <select id="animeSelect">
-                        <option value="0">🔍 Выберите аниме</option>
-                    </select>
-                </div>
             </div>
             <div class="episode-grid" id="episodeGrid"></div>
         </div>
@@ -322,141 +307,86 @@
         (function() {
             "use strict";
 
-            const ANIME_DB = [{
-                id: 0,
-                title: "Тёмный дворецкий",
-                rating: "8.7",
-                description: "Молодой граф Сиэль Фантомхайв заключает контракт с демоном, чтобы отомстить за гибель семьи.",
-                kodik_id: "40589",
-                alloha_id: "256",
-                episodes: 12
-            }, {
-                id: 1,
-                title: "Наруто",
-                rating: "8.5",
-                description: "История о юном ниндзя Наруто Узумаки, который мечтает стать Хокаге.",
-                kodik_id: "10",
-                alloha_id: "10",
-                episodes: 220
-            }, {
-                id: 2,
-                title: "Атака Титанов",
-                rating: "9.0",
-                description: "Человечество живёт за стенами, спасаясь от Титанов.",
-                kodik_id: "246",
-                alloha_id: "246",
-                episodes: 87
-            }];
+            // ================================================================
+            //  📹  ЗАМЕНИТЕ ЭТИ ССЫЛКИ НА РЕАЛЬНЫЕ ВИДЕО-ФАЙЛЫ (MP4)
+            // ================================================================
+            const VIDEO_URLS = [
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+                "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"
+            ];
 
-            const STORAGE_KEY = 'anime_player_source';
-            const STORAGE_EP_KEY = 'anime_player_episode';
-            const STORAGE_ANIME_KEY = 'anime_player_anime_id';
+            // ================================================================
 
-            const iframe = document.getElementById('playerIframe');
+            const video = document.getElementById('videoPlayer');
+            const videoSource = document.getElementById('videoSource');
+            const placeholder = document.getElementById('placeholder');
             const tabBtns = document.querySelectorAll('.tab-btn');
             const epGrid = document.getElementById('episodeGrid');
-            const animeSelect = document.getElementById('animeSelect');
             const animeTitle = document.getElementById('animeTitle');
             const animeRating = document.getElementById('animeRating');
             const animeDescription = document.getElementById('animeDescription');
             const episodeCount = document.getElementById('episodeCount');
             const searchInput = document.getElementById('searchInput');
 
-            let currentSource = 'kodik';
+            let currentSource = 'video';
             let currentEpisode = 1;
-            let currentAnimeId = 0;
+            const totalEpisodes = 12;
 
-            function getCurrentAnime() {
-                return ANIME_DB[currentAnimeId] || ANIME_DB[0];
-            }
+            // ================================================================
 
             function init() {
-                ANIME_DB.forEach((anime, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.textContent = anime.title;
-                    animeSelect.appendChild(option);
-                });
-
-                const savedSource = localStorage.getItem(STORAGE_KEY);
-                if (savedSource === 'alloha' || savedSource === 'kodik') {
+                const savedSource = localStorage.getItem('anime_player_source');
+                if (savedSource === 'kodik' || savedSource === 'alloha' || savedSource === 'video') {
                     currentSource = savedSource;
                 }
 
-                const savedAnime = localStorage.getItem(STORAGE_ANIME_KEY);
-                if (savedAnime) {
-                    const idx = parseInt(savedAnime, 10);
-                    if (!isNaN(idx) && idx >= 0 && idx < ANIME_DB.length) {
-                        currentAnimeId = idx;
-                        animeSelect.value = idx;
-                    }
-                }
-
-                const savedEp = localStorage.getItem(STORAGE_EP_KEY);
+                const savedEp = localStorage.getItem('anime_player_episode');
                 if (savedEp) {
-                    const epNum = parseInt(savedEp, 10);
-                    const anime = getCurrentAnime();
-                    if (!isNaN(epNum) && epNum >= 1 && epNum <= anime.episodes) {
-                        currentEpisode = epNum;
+                    const ep = parseInt(savedEp, 10);
+                    if (!isNaN(ep) && ep >= 1 && ep <= totalEpisodes) {
+                        currentEpisode = ep;
                     }
                 }
 
-                updateAnimeInfo();
                 buildEpisodeButtons();
                 updateTabsAndPlayer();
 
                 tabBtns.forEach(btn => {
                     btn.addEventListener('click', function() {
                         const source = this.dataset.player;
-                        if (source === 'kodik' || source === 'alloha') {
+                        if (source === 'kodik' || source === 'alloha' || source === 'video') {
                             currentSource = source;
-                            localStorage.setItem(STORAGE_KEY, currentSource);
+                            localStorage.setItem('anime_player_source', currentSource);
                             updateTabsAndPlayer();
                         }
                     });
                 });
 
-                animeSelect.addEventListener('change', function() {
-                    const idx = parseInt(this.value, 10);
-                    if (!isNaN(idx) && idx >= 0 && idx < ANIME_DB.length) {
-                        currentAnimeId = idx;
-                        localStorage.setItem(STORAGE_ANIME_KEY, String(currentAnimeId));
-                        const anime = getCurrentAnime();
-                        if (currentEpisode > anime.episodes) {
-                            currentEpisode = 1;
-                            localStorage.setItem(STORAGE_EP_KEY, String(currentEpisode));
-                        }
-                        updateAnimeInfo();
-                        buildEpisodeButtons();
-                        updateTabsAndPlayer();
-                    }
-                });
-
+                // Поиск по названию (для демонстрации)
                 searchInput.addEventListener('input', function() {
                     const query = this.value.toLowerCase().trim();
-                    const options = animeSelect.options;
-                    for (let i = 1; i < options.length; i++) {
-                        const text = options[i].textContent.toLowerCase();
-                        options[i].style.display = text.includes(query) ? '' : 'none';
+                    // Просто демонстрация
+                    if (query.length > 0) {
+                        animeTitle.textContent = `🔍 ${query}`;
+                    } else {
+                        animeTitle.textContent = 'Тёмный дворецкий';
                     }
                 });
-            }
-
-            function updateAnimeInfo() {
-                const anime = getCurrentAnime();
-                animeTitle.textContent = anime.title;
-                animeRating.textContent = anime.rating;
-                animeDescription.textContent = anime.description;
-                episodeCount.textContent = `1–${anime.episodes}`;
-                document.title = `AnimeGlass · ${anime.title}`;
             }
 
             function buildEpisodeButtons() {
-                const anime = getCurrentAnime();
                 epGrid.innerHTML = '';
-                const total = Math.min(anime.episodes, 50);
-
-                for (let i = 1; i <= total; i++) {
+                for (let i = 1; i <= totalEpisodes; i++) {
                     const btn = document.createElement('button');
                     btn.className = 'ep-btn';
                     btn.textContent = i;
@@ -466,9 +396,9 @@
                     }
                     btn.addEventListener('click', function() {
                         const ep = parseInt(this.dataset.ep, 10);
-                        if (!isNaN(ep) && ep >= 1 && ep <= anime.episodes) {
+                        if (!isNaN(ep) && ep >= 1 && ep <= totalEpisodes) {
                             currentEpisode = ep;
-                            localStorage.setItem(STORAGE_EP_KEY, String(currentEpisode));
+                            localStorage.setItem('anime_player_episode', String(currentEpisode));
                             document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
                             this.classList.add('active');
                             updatePlayerSrc();
@@ -476,6 +406,7 @@
                     });
                     epGrid.appendChild(btn);
                 }
+                episodeCount.textContent = `1–${totalEpisodes}`;
             }
 
             function updateTabsAndPlayer() {
@@ -491,19 +422,27 @@
             }
 
             function updatePlayerSrc() {
-                const anime = getCurrentAnime();
-                let url = '';
+                // Всегда показываем видео-плеер
+                video.style.display = 'block';
+                placeholder.style.display = 'none';
 
-                if (currentSource === 'kodik') {
-                    url = `https://kodik.info/series/${anime.kodik_id}/${currentEpisode}/`;
+                const videoUrl = VIDEO_URLS[currentEpisode - 1];
+
+                if (videoUrl && videoUrl.length > 0) {
+                    videoSource.src = videoUrl;
+                    video.load();
+                    video.play().catch(e => {
+                        console.log('Автовоспроизведение заблокировано');
+                    });
+                    console.log(`▶️ Серия ${currentEpisode}: ${videoUrl}`);
                 } else {
-                    url = `https://alloha.app/embed/${anime.alloha_id}/?ep=${currentEpisode}`;
+                    video.style.display = 'none';
+                    placeholder.style.display = 'flex';
+                    placeholder.textContent = '❌ Видео не найдено';
                 }
-
-                iframe.src = url;
-                console.log(`▶️ Плеер: ${currentSource}, серия ${currentEpisode} → ${url}`);
             }
 
+            // Запуск
             init();
         })();
     </script>
