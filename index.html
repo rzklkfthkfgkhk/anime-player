@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeGlass</title>
+    <title>AnimeGlass · видео</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
         body{background:#0d0f14;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;color:#fff}
@@ -13,12 +13,12 @@
         .search{flex:1;min-width:150px;padding:10px 20px;border-radius:50px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:#fff;font-size:14px}
         .search::placeholder{color:#888}
         .player-box{background:rgba(0,0,0,0.3);border-radius:20px;padding:15px;margin-bottom:20px}
-        .tabs{display:flex;gap:10px;margin-bottom:15px}
+        .tabs{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
         .tab{padding:8px 25px;border-radius:30px;border:none;background:rgba(255,255,255,0.05);color:#aaa;cursor:pointer;font-size:14px;transition:0.3s}
         .tab:hover{background:rgba(255,255,255,0.1)}
         .tab.active{background:rgba(100,150,255,0.2);color:#fff}
         .player{width:100%;aspect-ratio:16/9;background:#000;border-radius:15px;overflow:hidden;position:relative}
-        .player iframe{width:100%;height:100%;border:0}
+        .player video{width:100%;height:100%;display:block;background:#0a0d12}
         .player .info{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#666;font-size:16px;text-align:center}
         .anime-info{margin-top:15px}
         .anime-title{font-size:24px;font-weight:600;background:linear-gradient(135deg,#fff,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -32,6 +32,7 @@
         .ep-btn:hover{background:rgba(100,150,255,0.15);color:#fff}
         .ep-btn.active{background:rgba(100,150,255,0.25);border-color:rgba(100,150,255,0.3);color:#fff}
         .footer{text-align:right;margin-top:15px;color:#555;font-size:12px}
+        .video-status{color:#888;font-size:13px;margin-top:8px;text-align:center}
         @media(max-width:600px){.app{padding:15px}.logo{font-size:22px}.anime-title{font-size:20px}.ep-btn{padding:6px 12px;font-size:12px}}
     </style>
 </head>
@@ -44,13 +45,18 @@
 
     <div class="player-box">
         <div class="tabs">
-            <button class="tab active" data-player="kodik">📺 Kodik</button>
+            <button class="tab active" data-player="video">🎬 Видео</button>
+            <button class="tab" data-player="kodik">📺 Kodik</button>
             <button class="tab" data-player="alloha">🎞️ Alloha</button>
         </div>
         <div class="player" id="player">
             <div class="info" id="placeholder">📺 Выберите аниме и серию</div>
-            <iframe id="iframe" src="" style="display:none"></iframe>
+            <video id="videoPlayer" controls preload="metadata" style="display:none;">
+                <source id="videoSource" src="" type="video/mp4">
+                Ваш браузер не поддерживает видео
+            </video>
         </div>
+        <div class="video-status" id="videoStatus">💡 Выберите серию для просмотра</div>
         <div class="anime-info">
             <div class="anime-title" id="title">Тёмный дворецкий</div>
             <span class="anime-rating" id="rating">★ 8.7</span>
@@ -77,19 +83,41 @@
 </div>
 
 <script>
+// ================================================================
+//  📹  ЗАМЕНИТЕ ЭТИ ССЫЛКИ НА РЕАЛЬНЫЕ MP4-ВИДЕО
+//  Сейчас здесь тестовое видео (Big Buck Bunny)
+// ================================================================
+const VIDEO_URLS = [
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"
+];
+// ================================================================
+
 // БАЗА АНИМЕ
 const ANIME = [
-    {id:0,title:"Тёмный дворецкий",rating:"8.7",desc:"Молодой граф Сиэль Фантомхайв заключает контракт с демоном.",kodik:"40589",alloha:"256",eps:12},
-    {id:1,title:"Наруто",rating:"8.5",desc:"История о юном ниндзя Наруто Узумаки.",kodik:"10",alloha:"10",eps:220},
-    {id:2,title:"Атака Титанов",rating:"9.0",desc:"Человечество живёт за стенами, спасаясь от Титанов.",kodik:"246",alloha:"246",eps:87},
-    {id:3,title:"Ван-Пис",rating:"9.2",desc:"Пират Монки Д. Луффи ищет легендарное сокровище.",kodik:"5",alloha:"5",eps:1100},
-    {id:4,title:"Магическая битва",rating:"8.9",desc:"Юдзи Итадори становится вместилищем демона Сукуны.",kodik:"38289",alloha:"38289",eps:24},
-    {id:5,title:"Клинок, рассекающий демонов",rating:"9.1",desc:"Тандзиро Камадо охотится на демонов.",kodik:"40590",alloha:"40590",eps:44}
+    {id:0, title:"Тёмный дворецкий", rating:"8.7", desc:"Молодой граф Сиэль Фантомхайв заключает контракт с демоном.", kodik:"40589", alloha:"256", eps:12},
+    {id:1, title:"Наруто", rating:"8.5", desc:"История о юном ниндзя Наруто Узумаки.", kodik:"10", alloha:"10", eps:220},
+    {id:2, title:"Атака Титанов", rating:"9.0", desc:"Человечество живёт за стенами, спасаясь от Титанов.", kodik:"246", alloha:"246", eps:87},
+    {id:3, title:"Ван-Пис", rating:"9.2", desc:"Пират Монки Д. Луффи ищет легендарное сокровище.", kodik:"5", alloha:"5", eps:1100},
+    {id:4, title:"Магическая битва", rating:"8.9", desc:"Юдзи Итадори становится вместилищем демона Сукуны.", kodik:"38289", alloha:"38289", eps:24},
+    {id:5, title:"Клинок, рассекающий демонов", rating:"9.1", desc:"Тандзиро Камадо охотится на демонов.", kodik:"40590", alloha:"40590", eps:44}
 ];
 
 // DOM
-const iframe = document.getElementById('iframe');
+const video = document.getElementById('videoPlayer');
+const videoSource = document.getElementById('videoSource');
 const placeholder = document.getElementById('placeholder');
+const videoStatus = document.getElementById('videoStatus');
 const tabs = document.querySelectorAll('.tab');
 const epGrid = document.getElementById('epGrid');
 const animeList = document.getElementById('animeList');
@@ -99,7 +127,7 @@ const desc = document.getElementById('desc');
 const count = document.getElementById('count');
 const search = document.getElementById('search');
 
-let source = 'kodik';
+let source = 'video';
 let episode = 1;
 let animeId = 0;
 
@@ -144,22 +172,59 @@ function buildEpisodes(){
 
 function play(){
     const a = getAnime();
+    
+    if(source === 'video'){
+        // HTML5-видеоплеер
+        const url = VIDEO_URLS[episode - 1] || VIDEO_URLS[0];
+        if(url){
+            video.style.display = 'block';
+            placeholder.style.display = 'none';
+            videoSource.src = url;
+            video.load();
+            video.play().catch(() => {});
+            videoStatus.textContent = '▶️ Видео: ' + a.title + ' — серия ' + episode;
+            console.log('✅ Видео загружено: ' + url);
+        } else {
+            video.style.display = 'none';
+            placeholder.style.display = 'flex';
+            placeholder.textContent = '❌ Видео не найдено';
+            videoStatus.textContent = '❌ Ошибка: видео не найдено';
+        }
+        return;
+    }
+
+    // Kodik или Alloha
     let url = '';
     if(source === 'kodik'){
         url = 'https://kodik.info/series/' + a.kodik + '/' + episode + '/';
     } else {
         url = 'https://alloha.app/embed/' + a.alloha + '/?ep=' + episode;
     }
-    iframe.src = url;
+    
+    // Создаём iframe
+    let iframe = document.getElementById('iframePlayer');
+    if(!iframe){
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframePlayer';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = '0';
+        iframe.style.background = '#0a0d12';
+        iframe.allow = 'autoplay; encrypted-media; fullscreen';
+        document.getElementById('player').appendChild(iframe);
+    }
+    video.style.display = 'none';
     iframe.style.display = 'block';
     placeholder.style.display = 'none';
+    iframe.src = url;
+    videoStatus.textContent = '▶️ ' + source.toUpperCase() + ': ' + a.title + ' — серия ' + episode;
     console.log('▶️ ' + source + ' | ' + a.title + ' | серия ' + episode + ' → ' + url);
 }
 
 function init(){
     // Загрузка сохранений
     const s = localStorage.getItem('source');
-    if(s==='alloha' || s==='kodik'){ source=s; }
+    if(s==='alloha' || s==='kodik' || s==='video'){ source=s; }
     const e = localStorage.getItem('ep');
     if(e){ const ep=parseInt(e); if(ep>0){ episode=ep; } }
     const ai = localStorage.getItem('anime');
@@ -174,6 +239,9 @@ function init(){
             this.classList.add('active');
             source = this.dataset.player;
             localStorage.setItem('source', source);
+            // Убираем старый iframe
+            const oldIframe = document.getElementById('iframePlayer');
+            if(oldIframe){ oldIframe.remove(); }
             play();
         };
     });
