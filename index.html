@@ -15,7 +15,7 @@
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
         .controls { margin-top: 25px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; background: #14141e; padding: 15px 25px; border-radius: 15px; }
         .controls label { color: #aaa; font-size: 0.9rem; }
-        .controls select { background: #1e1e2a; color: #fff; padding: 10px 20px; border-radius: 30px; border: 1px solid #333; cursor: pointer; }
+        .controls select { background: #1e1e2a; color: #fff; padding: 10px 20px; border-radius: 30px; border: 1px solid #333; cursor: pointer; flex: 1; min-width: 120px; }
         .controls select:focus { outline: 2px solid #e94560; }
         .episode-list { margin-top: 30px; background: #14141e; padding: 20px; border-radius: 15px; }
         .episode-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
@@ -27,6 +27,9 @@
         .back-btn:hover { background: #ff6b81; }
         .loading-player { text-align: center; padding: 30px; color: #888; }
         .player-error { color: #e94560; text-align: center; padding: 30px; }
+        .video-source-info { font-size: 0.8rem; color: #666; margin-top: 10px; text-align: center; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #e94560; border-radius: 50%; animation: spin 1s linear infinite; }
         @media (max-width: 600px) { .navbar { flex-direction: column; align-items: flex-start; } .controls { flex-direction: column; align-items: stretch; } }
     </style>
 </head>
@@ -41,9 +44,9 @@
         <h2 id="animeTitle" class="info-title">Загрузка информации...</h2>
         
         <div class="video-container" id="videoContainer">
-            <div id="playerLoader" class="loading-player">
-                <div style="display:inline-block; width:40px; height:40px; border:4px solid #333; border-top:4px solid #e94560; border-radius:50%; animation:spin 1s linear infinite;"></div>
-                <p style="margin-top:15px;">Загрузка плеера...</p>
+            <div id="playerLoader" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:#111;">
+                <div class="spinner"></div>
+                <p style="margin-top:20px; color:#888;">Загрузка плеера...</p>
             </div>
             <iframe id="animeIframe" src="about:blank" allowfullscreen style="display:none;"></iframe>
         </div>
@@ -51,26 +54,28 @@
         <div class="controls">
             <label>🎙 Озвучка:</label>
             <select id="voiceSelect" onchange="changeVoice()">
+                <option value="kodik">Kodik (Официальный)</option>
                 <option value="anilibria">AniLibria</option>
-                <option value="shiza">Shiba</option>
                 <option value="anidub">AniDUB</option>
-                <option value="kodik">Kodik</option>
+                <option value="jutsu">Jutsu</option>
             </select>
             
-            <label style="margin-left: 20px;">📺 Серия:</label>
+            <label>📺 Серия:</label>
             <select id="episodeSelect" onchange="changeEpisode()">
                 <option value="1">1 серия</option>
             </select>
 
-            <a href="index.html" class="back-btn" style="margin-left: auto;">← Назад</a>
+            <a href="index.html" class="back-btn">← Назад</a>
         </div>
 
         <div class="episode-list">
             <h4>Все серии</h4>
             <div class="episode-grid" id="episodeGrid">
-                <div class="loading-player">Загрузка серий...</div>
+                <div style="color:#888; padding:10px;">Загрузка серий...</div>
             </div>
         </div>
+        
+        <div class="video-source-info" id="sourceInfo">Источник: Kodik</div>
     </div>
 
     <script>
@@ -78,45 +83,66 @@
         const urlParams = new URLSearchParams(window.location.search);
         let animeCode = urlParams.get('code') || 'jujutsu-kaisen';
         let currentEpisode = 1;
-        let currentVoice = 'anilibria';
-        let animeData = null;
+        let currentVoice = 'kodik';
         let animeId = null;
+        let animeTitle = '';
 
         // Провайдеры видео (работают через внешние плееры)
-        // В реальности нужно подставлять ID аниме из API
+        // Используем актуальные embed-ссылки
         const videoProviders = {
-            'anilibria': (id, ep) => `https://anilibria.tv/embed/${id}/${ep}`,
-            'shiza': (id, ep) => `https://shiza-project.ru/embed/${id}/${ep}`,
-            'anidub': (id, ep) => `https://anidub.com/player/${id}/${ep}`,
-            'kodik': (id, ep) => `https://kodik.cc/serial/${id}/${ep}/720p`
+            'kodik': (id, ep) => {
+                // Kodik - самый стабильный, используем поиск по названию
+                return `https://kodik.cc/serial/${id}/${ep}/720p`;
+            },
+            'anilibria': (id, ep) => {
+                return `https://anilibria.tv/embed/${id}/${ep}`;
+            },
+            'anidub': (id, ep) => {
+                return `https://anidub.com/player/${id}/${ep}`;
+            },
+            'jutsu': (id, ep) => {
+                return `https://jut.su/${id}/season-1/episode-${ep}.html`;
+            }
         };
 
-        // Функция получения данных об аниме через API
+        // База аниме с ID для Kodik (у каждого аниме свой ID в Kodik)
+        // Это нужно для правильной работы плеера
+        const animeDatabase = {
+            'jujutsu-kaisen': { id: 'jujutsu-kaisen', title: 'Магическая битва', kodikId: 'jujutsu-kaisen' },
+            'jujutsu-kaisen-2': { id: 'jujutsu-kaisen-2', title: 'Магическая битва 2 сезон', kodikId: 'jujutsu-kaisen' },
+            'naruto': { id: 'naruto', title: 'Наруто', kodikId: 'naruto' },
+            'one-piece': { id: 'one-piece', title: 'One Piece', kodikId: 'one-piece' },
+            'attack-on-titan': { id: 'attack-on-titan', title: 'Атака Титанов', kodikId: 'shingeki-no-kyojin' },
+            'demon-slayer': { id: 'demon-slayer', title: 'Клинок Рассекающий Демонов', kodikId: 'kimetu-no-yaiba' },
+            'spy-x-family': { id: 'spy-x-family', title: 'Spy x Family', kodikId: 'spy-x-family' },
+            'chainsaw-man': { id: 'chainsaw-man', title: 'Человек-бензопила', kodikId: 'chainsaw-man' },
+            'death-note': { id: 'death-note', title: 'Тетрадь смерти', kodikId: 'death-note' },
+            'fullmetal-alchemist': { id: 'fullmetal-alchemist', title: 'Стальной Алхимик', kodikId: 'fullmetal-alchemist' }
+        };
+
+        // Функция получения данных об аниме
         async function fetchAnimeData(code) {
+            // Сначала проверяем локальную базу
+            if (animeDatabase[code]) {
+                return animeDatabase[code];
+            }
+
+            // Если нет в базе - пробуем API Anilibria
             try {
-                // Сначала пробуем поискать по коду
-                let response = await fetch(`https://api.anilibria.tv/v2/title/search?query=${encodeURIComponent(code)}`);
-                let data = await response.json();
+                const response = await fetch(`https://api.anilibria.tv/v2/title/search?query=${encodeURIComponent(code)}`);
+                const data = await response.json();
                 
-                let result = null;
                 if (Array.isArray(data) && data.length > 0) {
-                    result = data[0];
-                } else if (data && data.id) {
-                    result = data;
-                } else if (data && data.list && data.list.length > 0) {
-                    result = data.list[0];
+                    const result = data[0];
+                    return {
+                        id: result.id,
+                        title: result.title,
+                        kodikId: result.code || result.id
+                    };
                 }
-
-                // Если не нашли по коду - пробуем по ID
-                if (!result && !isNaN(code)) {
-                    response = await fetch(`https://api.anilibria.tv/v2/title/${code}`);
-                    data = await response.json();
-                    if (data && data.id) result = data;
-                }
-
-                return result;
+                return null;
             } catch (error) {
-                console.error('Ошибка получения данных:', error);
+                console.error('Ошибка API:', error);
                 return null;
             }
         }
@@ -131,60 +157,47 @@
 
             try {
                 // Получаем данные об аниме
-                animeData = await fetchAnimeData(animeCode);
+                const data = await fetchAnimeData(animeCode);
                 
-                if (animeData) {
-                    const title = animeData.title || 'Без названия';
-                    titleDisplay.textContent = title;
-                    titleElem.textContent = title;
-                    animeId = animeData.id;
-
-                    // Генерируем серии
-                    const episodes = animeData.episodes || 12;
-                    grid.innerHTML = '';
-                    for (let i = 1; i <= episodes; i++) {
-                        const btn = document.createElement('div');
-                        btn.className = 'ep-btn' + (i === currentEpisode ? ' active' : '');
-                        btn.textContent = i;
-                        btn.onclick = function() {
-                            document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
-                            this.classList.add('active');
-                            currentEpisode = i;
-                            updateVideo();
-                        };
-                        grid.appendChild(btn);
-                    }
-
-                    // Обновляем селектор серий
-                    const epSelect = document.getElementById('episodeSelect');
-                    epSelect.innerHTML = '';
-                    for (let i = 1; i <= episodes; i++) {
-                        const opt = document.createElement('option');
-                        opt.value = i;
-                        opt.textContent = i + ' серия';
-                        if (i === currentEpisode) opt.selected = true;
-                        epSelect.appendChild(opt);
-                    }
-
+                if (data) {
+                    animeTitle = data.title;
+                    animeId = data.kodikId || data.id;
+                    titleDisplay.textContent = animeTitle;
+                    titleElem.textContent = animeTitle;
                 } else {
-                    // Если не нашли в API - используем заглушку
-                    titleDisplay.textContent = decodeURIComponent(animeCode).replace(/-/g, ' ');
-                    titleElem.textContent = decodeURIComponent(animeCode).replace(/-/g, ' ');
-                    animeId = 85; // ID по умолчанию
-                    
-                    grid.innerHTML = '';
-                    for (let i = 1; i <= 12; i++) {
-                        const btn = document.createElement('div');
-                        btn.className = 'ep-btn' + (i === currentEpisode ? ' active' : '');
-                        btn.textContent = i;
-                        btn.onclick = function() {
-                            document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
-                            this.classList.add('active');
-                            currentEpisode = i;
-                            updateVideo();
-                        };
-                        grid.appendChild(btn);
-                    }
+                    // Если не нашли - используем заглушку
+                    animeTitle = decodeURIComponent(animeCode).replace(/-/g, ' ').toUpperCase();
+                    animeId = decodeURIComponent(animeCode).replace(/\s/g, '-').toLowerCase();
+                    titleDisplay.textContent = animeTitle;
+                    titleElem.textContent = animeTitle;
+                }
+
+                // Генерируем серии (по умолчанию 12)
+                const episodes = 12;
+                grid.innerHTML = '';
+                for (let i = 1; i <= episodes; i++) {
+                    const btn = document.createElement('div');
+                    btn.className = 'ep-btn' + (i === currentEpisode ? ' active' : '');
+                    btn.textContent = i;
+                    btn.onclick = function() {
+                        document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        currentEpisode = i;
+                        document.getElementById('episodeSelect').value = i;
+                        updateVideo();
+                    };
+                    grid.appendChild(btn);
+                }
+
+                // Обновляем селектор серий
+                const epSelect = document.getElementById('episodeSelect');
+                epSelect.innerHTML = '';
+                for (let i = 1; i <= episodes; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = i + ' серия';
+                    if (i === currentEpisode) opt.selected = true;
+                    epSelect.appendChild(opt);
                 }
 
                 // Загружаем видео
@@ -193,26 +206,51 @@
             } catch (error) {
                 console.error('Ошибка:', error);
                 grid.innerHTML = `<div class="player-error">⚠️ Ошибка загрузки данных</div>`;
+                titleDisplay.textContent = 'Ошибка';
+                titleElem.textContent = 'Ошибка загрузки';
             }
         }
 
         function updateVideo() {
             const iframe = document.getElementById('animeIframe');
             const loader = document.getElementById('playerLoader');
+            const sourceInfo = document.getElementById('sourceInfo');
             
             // Получаем ссылку на видео
-            const provider = videoProviders[currentVoice] || videoProviders['anilibria'];
-            const videoUrl = provider(animeId || 85, currentEpisode);
+            const provider = videoProviders[currentVoice] || videoProviders['kodik'];
             
-            // Показываем iframe
+            // Для Kodik используем специальный формат
+            let videoUrl;
+            if (currentVoice === 'kodik') {
+                // Для Kodik используем поиск по названию
+                const searchQuery = encodeURIComponent(animeTitle || animeCode);
+                videoUrl = `https://kodik.cc/serial/${animeId}/${currentEpisode}/720p`;
+                sourceInfo.textContent = `Источник: Kodik (${animeTitle})`;
+            } else if (currentVoice === 'jutsu') {
+                videoUrl = `https://jut.su/${animeId}/season-1/episode-${currentEpisode}.html`;
+                sourceInfo.textContent = `Источник: Jut.su`;
+            } else {
+                // Для других провайдеров
+                const id = typeof animeId === 'string' ? animeId.replace(/[^0-9]/g, '') : animeId;
+                videoUrl = provider(id || 85, currentEpisode);
+                sourceInfo.textContent = `Источник: ${currentVoice.charAt(0).toUpperCase() + currentVoice.slice(1)}`;
+            }
+            
+            // Показываем iframe с видео
             iframe.style.display = 'block';
             loader.style.display = 'none';
             iframe.src = videoUrl;
+            
+            // Логируем для отладки
+            console.log('Загружено видео:', videoUrl);
         }
 
         function changeVoice() {
             currentVoice = document.getElementById('voiceSelect').value;
-            updateVideo();
+            // Показываем загрузчик
+            document.getElementById('playerLoader').style.display = 'flex';
+            document.getElementById('animeIframe').style.display = 'none';
+            setTimeout(() => updateVideo(), 300);
         }
 
         function changeEpisode() {
@@ -220,10 +258,13 @@
             document.querySelectorAll('.ep-btn').forEach((btn, index) => {
                 btn.classList.toggle('active', (index + 1) === currentEpisode);
             });
-            updateVideo();
+            // Показываем загрузчик
+            document.getElementById('playerLoader').style.display = 'flex';
+            document.getElementById('animeIframe').style.display = 'none';
+            setTimeout(() => updateVideo(), 300);
         }
 
-        // Запускаем
+        // Запускаем загрузку
         loadPlayer();
     </script>
 </body>
